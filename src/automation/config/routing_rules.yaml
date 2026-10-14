@@ -1,0 +1,54 @@
+# ITSM Automation Routing & SLA Configuration Rules
+
+assignment_rules:
+  - name: IAM_Identity_Operations
+    group: "IAM-Identity-Operations"
+    categories: ["Access / Identity", "Security"]
+    keywords: ["password", "mfa", "authenticator", "active directory", "lockout", "account unlock", "permission", "access request"]
+
+  - name: Desktop_Support
+    group: "Desktop-Support-L2"
+    categories: ["Hardware"]
+    keywords: ["laptop", "battery", "keyboard", "monitor", "dock", "screen", "charger", "headset"]
+
+  - name: Network_Operations
+    group: "Network-Infrastructure-Ops"
+    categories: ["Network"]
+    keywords: ["wifi", "vpn", "dns", "mpls", "latency", "packet loss", "firewall", "switch", "router"]
+
+  - name: Enterprise_ERP_Support
+    group: "Enterprise-ERP-Support"
+    categories: ["ERP / SAP"]
+    keywords: ["sap", "t-code", "va01", "me21n", "abap", "invoice", "purchase order", "dump"]
+
+  - name: Cloud_Platform_Engineering
+    group: "Cloud-Platform-Engineering"
+    categories: ["Cloud & DevOps"]
+    keywords: ["kubernetes", "k8s", "pod", "aws", "s3", "docker", "ci/cd", "github actions", "pipeline", "oom"]
+
+  - name: Default_Fallback
+    group: "ServiceDesk-L1"
+    categories: ["General", "Software"]
+    keywords: []
+
+sla_policies:
+  # Priority 1 - Critical
+  1:
+    response_time_minutes: 15
+    resolution_time_minutes: 120
+    warning_threshold_pct: 0.75
+  # Priority 2 - High
+  2:
+    response_time_minutes: 30
+    resolution_time_minutes: 240
+    warning_threshold_pct: 0.75
+  # Priority 3 - Moderate
+  3:
+    response_time_minutes: 120
+    resolution_time_minutes: 1440
+    warning_threshold_pct: 0.80
+  # Priority 4 - Low
+  4:
+    response_time_minutes: 240
+    resolution_time_minutes: 4320
+    warning_threshold_pct: 0.85

@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  itsm-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: uvicorn src.mock_itsm.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./data/itsm.db
+      - ENVIRONMENT=production
+    volumes:
+      - itsm_data:/app/data
+    restart: unless-stopped
+
+  itsm-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: streamlit run src/dashboard/app.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    environment:
+      - DATABASE_URL=sqlite:///./data/itsm.db
+    volumes:
+      - itsm_data:/app/data
+      - sharepoint_data:/app/local_sharepoint
+    depends_on:
+      - itsm-api
+    restart: unless-stopped
+
+volumes:
+  itsm_data:
+  sharepoint_data:
