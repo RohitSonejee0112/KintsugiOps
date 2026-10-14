@@ -99,50 +99,60 @@ if active_tab == "🎯 Live Triage Console":
     st.header("🎯 Live Ticket Triage & Auto-Resolution Console")
     st.markdown("Inspect incoming tickets, evaluate AI classification with PII guardrails, and trigger automated runbooks.")
 
+    # Initialize default inputs in session state if not set
+    if "ticket_title" not in st.session_state:
+        st.session_state["ticket_title"] = "User locked out after password expiration"
+        st.session_state["ticket_desc"] = "User employee@company.com with IP 10.0.4.12 entered wrong password. Account is locked in Active Directory."
+        st.session_state["ticket_email"] = "employee@company.com"
+
     col_input, col_ai = st.columns([1, 1], gap="large")
 
     with col_input:
         st.subheader("1. Incoming Ticket")
-        if st.button("🎲 Generate Realistic Random Ticket"):
+        if st.button("🎲 Generate Realistic Random Ticket", use_container_width=True):
             sample = generate_synthetic_ticket()
             st.session_state["ticket_title"] = sample["title"]
             st.session_state["ticket_desc"] = sample["description"]
             st.session_state["ticket_email"] = sample["caller_email"]
+            st.rerun()
 
-        title = st.text_input("Title", value=st.session_state.get("ticket_title", "User locked out after password expiration"))
-        desc = st.text_area("Description", value=st.session_state.get("ticket_desc", "User employee@company.com with IP 10.0.4.12 entered wrong password. Account is locked in Active Directory."), height=120)
-        caller = st.text_input("Caller Email", value=st.session_state.get("ticket_email", "employee@company.com"))
+        title = st.text_input("Title", key="ticket_title")
+        desc = st.text_area("Description", key="ticket_desc", height=120)
+        caller = st.text_input("Caller Email", key="ticket_email")
 
         c1, c2 = st.columns(2)
         with c1:
-            run_ai = st.button("🤖 Run AI Triage", type="primary", use_container_width=True)
+            run_ai = st.button("🤖 Re-evaluate AI Triage", type="primary", use_container_width=True)
         with c2:
             run_auto = st.button("⚡ Execute Auto-Runbook", use_container_width=True)
 
     with col_ai:
         st.subheader("2. AI Analysis & Remediation")
-        if run_ai or run_auto or "last_triage" in st.session_state:
-            classifier = AITriageClassifier()
-            triage_res = classifier.triage_ticket(title, desc, caller)
-            st.session_state["last_triage"] = triage_res
+        import importlib
+        import src.ai.classifier
+        importlib.reload(src.ai.classifier)
+        from src.ai.classifier import AITriageClassifier
 
-            # Badges
-            b1, b2, b3 = st.columns(3)
-            with b1:
-                st.metric("Category", triage_res.category)
-            with b2:
-                st.metric("Priority", f"P{triage_res.priority}")
-            with b3:
-                st.metric("Confidence", f"{int(triage_res.confidence_score * 100)}%")
+        classifier = AITriageClassifier()
+        triage_res = classifier.triage_ticket(title, desc, caller)
 
-            st.markdown(f"**Target Assignment Group:** `{triage_res.assignment_group}`")
-            st.markdown(f"**AI Reasoning:** _{triage_res.reasoning_summary}_")
+        # Badges
+        b1, b2, b3 = st.columns(3)
+        with b1:
+            st.metric("Category", triage_res.category)
+        with b2:
+            st.metric("Priority", f"P{triage_res.priority}")
+        with b3:
+            st.metric("Confidence", f"{int(triage_res.confidence_score * 100)}%")
 
-            if triage_res.pii_redacted_count > 0:
-                st.warning(f"🛡️ Guardrail Active: Redacted {triage_res.pii_redacted_count} sensitive PII token(s) prior to model inference.")
+        st.markdown(f"**Target Assignment Group:** `{triage_res.assignment_group}`")
+        st.markdown(f"**AI Reasoning:** _{triage_res.reasoning_summary}_")
 
-            if triage_res.suggested_kb_articles:
-                st.info(f"📚 RAG Knowledge Base Articles Suggested: {', '.join(triage_res.suggested_kb_articles)}")
+        if triage_res.pii_redacted_count > 0:
+            st.warning(f"🛡️ Guardrail Active: Redacted {triage_res.pii_redacted_count} sensitive PII token(s) prior to model inference.")
+
+        if triage_res.suggested_kb_articles:
+            st.info(f"📚 RAG Knowledge Base Articles Suggested: {', '.join(triage_res.suggested_kb_articles)}")
 
             if run_auto:
                 provider = MockITSMProvider()
