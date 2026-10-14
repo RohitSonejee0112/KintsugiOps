@@ -9,7 +9,7 @@ import pandas as pd
 # Add project root to sys.path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from src.mock_itsm.database import SessionLocal, init_db
+from src.mock_itsm.database import SessionLocal, init_db, reset_db
 from src.mock_itsm.models import Ticket, EventLog
 from src.integrations.mock_provider import MockITSMProvider
 from src.automation.engine import AutomationEngine
@@ -21,7 +21,11 @@ from src.process_mining.analyzer import ProcessMiningAnalyzer
 from src.process_mining.proposal_generator import StructuralProposalGenerator
 from src.sharepoint.local_provider import LocalDocumentProvider
 from src.sharepoint.report_builder import ReportBuilder
-from src.simulation.generator import generate_synthetic_ticket, seed_synthetic_tickets
+from src.simulation.generator import (
+    generate_synthetic_ticket,
+    seed_synthetic_tickets,
+    seed_events_for_existing_tickets,
+)
 from src.simulation.simulator import SimulationRunner
 
 # Configure page layout
@@ -168,6 +172,30 @@ elif active_tab == "🔍 Process Mining & Gaps":
 
     # Fetch event data
     df_events = EventLogExtractor.extract_from_database(limit=5000)
+
+    # Auto-populate events if tickets exist but lack event history
+    if df_events.empty:
+        with SessionLocal() as db:
+            if db.query(Ticket).count() > 0:
+                seed_events_for_existing_tickets(db)
+                df_events = EventLogExtractor.extract_from_database(limit=5000)
+
+    col_title, col_actions = st.columns([3, 1])
+    with col_actions:
+        with st.popover("⚙️ Dataset Options"):
+            if st.button("🌱 Add 100 More Cases"):
+                with st.spinner("Generating 100 new cases..."):
+                    with SessionLocal() as db:
+                        seed_synthetic_tickets(count=100, db=db)
+                st.toast("Added 100 new ticket lifecycles!")
+                st.rerun()
+            if st.button("🔄 Reset & Re-seed Clean 200 Cases"):
+                with st.spinner("Resetting database..."):
+                    reset_db()
+                    with SessionLocal() as db:
+                        seed_synthetic_tickets(count=200, db=db)
+                st.toast("Database reset and re-seeded with 200 clean cases!")
+                st.rerun()
 
     if df_events.empty or df_events["case:concept:name"].nunique() < 3:
         st.info("💡 Event log is currently empty or small. Click below to seed realistic ticket events for process mining.")

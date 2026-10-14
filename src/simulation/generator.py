@@ -244,17 +244,24 @@ def seed_synthetic_tickets(
     created_tickets = []
     prefix = "INC"
 
-    # Find highest existing ticket ID number to prevent any duplicate key errors
-    last_ticket = db.query(Ticket).filter(Ticket.id.like(f"{prefix}%")).order_by(desc(Ticket.id)).first()
-    if last_ticket and last_ticket.id[len(prefix):].isdigit():
-        start_num = int(last_ticket.id[len(prefix):]) + 1
-    else:
-        start_num = 100001
+    # Fetch all existing IDs to guarantee zero collision
+    existing_ids = {t[0] for t in db.query(Ticket.id).all()}
+    max_num = 100000
+    for tid in existing_ids:
+        if tid.startswith(prefix) and tid[len(prefix):].isdigit():
+            max_num = max(max_num, int(tid[len(prefix):]))
+    start_num = max_num + 1
 
     try:
         now = utcnow()
         for i in range(count):
-            t_id = f"{prefix}{start_num + i:06d}"
+            t_id = f"{prefix}{start_num:06d}"
+            while t_id in existing_ids:
+                start_num += 1
+                t_id = f"{prefix}{start_num:06d}"
+            existing_ids.add(t_id)
+            start_num += 1
+
             raw = generate_synthetic_ticket(ticket_id=t_id)
 
             # Assign a realistic creation date over the last 30 days
@@ -449,3 +456,123 @@ def seed_synthetic_tickets(
             db.close()
 
     return created_tickets
+
+
+def seed_events_for_existing_tickets(db: Optional[Session] = None) -> int:
+    """Generate realistic Process Mining EventLog records for any existing tickets lacking events."""
+    close_db = False
+    if db is None:
+        db = SessionLocal()
+        close_db = True
+
+    try:
+        tickets = db.query(Ticket).all()
+        if not tickets:
+            return 0
+
+        now = utcnow()
+        added_events = 0
+
+        for ticket in tickets:
+            existing_count = db.query(EventLog).filter(EventLog.ticket_id == ticket.id).count()
+            if existing_count > 0:
+                continue
+
+            created_time = ticket.created_at or (now - timedelta(days=random.uniform(1, 20)))
+            group = ticket.assignment_group or "ServiceDesk-L1"
+
+            # Event 1: Created
+            ev1 = EventLog(
+                ticket_id=ticket.id,
+                activity="Created",
+                timestamp=created_time,
+                actor=ticket.caller_email,
+                to_state="new",
+                to_group=group,
+                details=f"Ticket created with priority P{ticket.priority}",
+            )
+            db.add(ev1)
+            added_events += 1
+
+            is_ping_pong = random.random() < 0.25
+
+            if is_ping_pong:
+                t_assign = created_time + timedelta(hours=random.uniform(1.0, 3.0))
+                db.add(EventLog(
+                    ticket_id=ticket.id,
+                    activity="Assigned",
+                    timestamp=t_assign,
+                    actor="dispatcher",
+                    to_state="assigned",
+                    from_group="ServiceDesk-L1",
+                    to_group="ServiceDesk-L1",
+                ))
+                t_b1 = t_assign + timedelta(hours=random.uniform(2.0, 5.0))
+                db.add(EventLog(
+                    ticket_id=ticket.id,
+                    activity="Reassigned",
+                    timestamp=t_b1,
+                    actor="tech-l1",
+                    from_group="ServiceDesk-L1",
+                    to_group=group,
+                ))
+                t_b2 = t_b1 + timedelta(hours=random.uniform(3.0, 8.0))
+                db.add(EventLog(
+                    ticket_id=ticket.id,
+                    activity="Reassigned",
+                    timestamp=t_b2,
+                    actor="tech-l2",
+                    from_group=group,
+                    to_group="ServiceDesk-L1",
+                ))
+                t_b3 = t_b2 + timedelta(hours=random.uniform(2.0, 6.0))
+                db.add(EventLog(
+                    ticket_id=ticket.id,
+                    activity="Reassigned",
+                    timestamp=t_b3,
+                    actor="tech-l1",
+                    from_group="ServiceDesk-L1",
+                    to_group=group,
+                ))
+                t_res = t_b3 + timedelta(hours=random.uniform(3.0, 10.0))
+                db.add(EventLog(
+                    ticket_id=ticket.id,
+                    activity="Resolved",
+                    timestamp=t_res,
+                    actor="tech-l2",
+                    from_state="in_progress",
+                    to_state="resolved",
+                    to_group=group,
+                ))
+                ticket.state = "resolved"
+                ticket.resolved_at = t_res
+                added_events += 5
+            else:
+                t_assign = created_time + timedelta(hours=random.uniform(0.5, 2.5))
+                db.add(EventLog(
+                    ticket_id=ticket.id,
+                    activity="Assigned",
+                    timestamp=t_assign,
+                    actor="dispatcher",
+                    to_state="assigned",
+                    to_group=group,
+                ))
+                t_res = t_assign + timedelta(hours=random.uniform(1.0, 8.0))
+                db.add(EventLog(
+                    ticket_id=ticket.id,
+                    activity="Resolved",
+                    timestamp=t_res,
+                    actor="engineer",
+                    from_state="assigned",
+                    to_state="resolved",
+                    to_group=group,
+                ))
+                ticket.state = "resolved"
+                ticket.resolved_at = t_res
+                added_events += 2
+
+        db.commit()
+        return added_events
+    finally:
+        if close_db:
+            db.close()
