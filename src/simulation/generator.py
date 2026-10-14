@@ -1,10 +1,12 @@
 """Synthetic ITSM ticket generator with realistic distributions and domain scenarios."""
 import random
+from datetime import timedelta
 from typing import List, Dict, Any, Optional
 from faker import Faker
 from sqlalchemy.orm import Session
+from sqlalchemy import desc
 
-from ..mock_itsm.models import Ticket, calculate_itil_priority, utcnow
+from ..mock_itsm.models import Ticket, EventLog, calculate_itil_priority, utcnow
 from ..mock_itsm.database import SessionLocal
 
 fake = Faker()
@@ -242,13 +244,31 @@ def seed_synthetic_tickets(
     created_tickets = []
     prefix = "INC"
 
+    # Find highest existing ticket ID number to prevent any duplicate key errors
+    last_ticket = db.query(Ticket).filter(Ticket.id.like(f"{prefix}%")).order_by(desc(Ticket.id)).first()
+    if last_ticket and last_ticket.id[len(prefix):].isdigit():
+        start_num = int(last_ticket.id[len(prefix):]) + 1
+    else:
+        start_num = 100001
+
     try:
-        for i in range(1, count + 1):
-            t_id = f"{prefix}{100000 + i:06d}"
+        now = utcnow()
+        for i in range(count):
+            t_id = f"{prefix}{start_num + i:06d}"
             raw = generate_synthetic_ticket(ticket_id=t_id)
 
+            # Assign a realistic creation date over the last 30 days
+            created_time = now - timedelta(
+                days=random.uniform(1, 30),
+                hours=random.uniform(0, 23),
+                minutes=random.uniform(0, 59)
+            )
+
+            is_auto = raw.get("auto_resolvable", False) and random.random() < 0.70
+            is_ping_pong = (not is_auto) and (random.random() < 0.22)  # ~22% bounce rate for process mining
+
             ticket = Ticket(
-                id=raw["id"],
+                id=t_id,
                 ticket_type=raw["ticket_type"],
                 title=raw["title"],
                 description=raw["description"],
@@ -257,19 +277,170 @@ def seed_synthetic_tickets(
                 impact=raw["impact"],
                 urgency=raw["urgency"],
                 priority=raw["priority"],
-                state="new",
+                state="resolved",
                 assignment_group=raw["assignment_group"],
                 caller_email=raw["caller_email"],
-                created_at=utcnow(),
-                updated_at=utcnow(),
+                created_at=created_time,
+                updated_at=created_time,
                 sla_breached=False,
-                auto_resolved=False,
+                auto_resolved=is_auto,
             )
             ticket.set_tags(raw["tags"])
             db.add(ticket)
+
+            # Event 1: Created
+            ev_created = EventLog(
+                ticket_id=t_id,
+                activity="Created",
+                timestamp=created_time,
+                actor=raw["caller_email"],
+                to_state="new",
+                to_group=raw["assignment_group"],
+                details=f"Ticket created with priority P{raw['priority']}",
+            )
+            db.add(ev_created)
+
+            if is_auto:
+                # Resolved by runbook in seconds
+                resolved_time = created_time + timedelta(seconds=random.uniform(20, 90))
+                ticket.resolved_at = resolved_time
+                ticket.updated_at = resolved_time
+                ticket.resolution_notes = "Resolved automatically via self-service remediation runbook."
+                ev_resolved = EventLog(
+                    ticket_id=t_id,
+                    activity="Resolved",
+                    timestamp=resolved_time,
+                    actor="RunbookEngine",
+                    from_state="new",
+                    to_state="resolved",
+                    from_group=raw["assignment_group"],
+                    to_group=raw["assignment_group"],
+                    details="Automated self-service resolution completed.",
+                )
+                db.add(ev_resolved)
+
+            elif is_ping_pong:
+                # Ticket bounces between ServiceDesk-L1 and specialist group
+                t_assign = created_time + timedelta(hours=random.uniform(1.0, 3.5))
+                ev_assign = EventLog(
+                    ticket_id=t_id,
+                    activity="Assigned",
+                    timestamp=t_assign,
+                    actor="dispatcher-system",
+                    from_state="new",
+                    to_state="assigned",
+                    from_group="ServiceDesk-L1",
+                    to_group="ServiceDesk-L1",
+                    details="Initial intake assignment",
+                )
+                db.add(ev_assign)
+
+                # Hop 1: ServiceDesk-L1 -> Specialist group
+                t_bounce1 = t_assign + timedelta(hours=random.uniform(2.0, 6.0))
+                ev_b1 = EventLog(
+                    ticket_id=t_id,
+                    activity="Reassigned",
+                    timestamp=t_bounce1,
+                    actor="tech-l1",
+                    from_group="ServiceDesk-L1",
+                    to_group=raw["assignment_group"],
+                    details=f"Escalated to {raw['assignment_group']}",
+                )
+                db.add(ev_b1)
+
+                # Hop 2: Specialist group -> ServiceDesk-L1
+                t_bounce2 = t_bounce1 + timedelta(hours=random.uniform(3.0, 10.0))
+                ev_b2 = EventLog(
+                    ticket_id=t_id,
+                    activity="Reassigned",
+                    timestamp=t_bounce2,
+                    actor="specialist-l2",
+                    from_group=raw["assignment_group"],
+                    to_group="ServiceDesk-L1",
+                    details="Incomplete diagnostics; returned to L1",
+                )
+                db.add(ev_b2)
+
+                # Hop 3: ServiceDesk-L1 -> Specialist group
+                t_bounce3 = t_bounce2 + timedelta(hours=random.uniform(2.0, 6.0))
+                ev_b3 = EventLog(
+                    ticket_id=t_id,
+                    activity="Reassigned",
+                    timestamp=t_bounce3,
+                    actor="tech-l1",
+                    from_group="ServiceDesk-L1",
+                    to_group=raw["assignment_group"],
+                    details="Diagnostic logs attached; re-routed to specialist",
+                )
+                db.add(ev_b3)
+
+                # Resolved
+                resolved_time = t_bounce3 + timedelta(hours=random.uniform(4.0, 18.0))
+                ticket.resolved_at = resolved_time
+                ticket.updated_at = resolved_time
+                ticket.resolution_notes = "Issue resolved following multi-team investigation."
+                ev_res = EventLog(
+                    ticket_id=t_id,
+                    activity="Resolved",
+                    timestamp=resolved_time,
+                    actor="specialist-l2",
+                    from_state="in_progress",
+                    to_state="resolved",
+                    from_group=raw["assignment_group"],
+                    to_group=raw["assignment_group"],
+                    details="Resolved by senior specialist",
+                )
+                db.add(ev_res)
+
+            else:
+                # Standard linear resolution flow
+                t_assign = created_time + timedelta(hours=random.uniform(0.5, 3.0))
+                ev_assign = EventLog(
+                    ticket_id=t_id,
+                    activity="Assigned",
+                    timestamp=t_assign,
+                    actor="dispatcher",
+                    from_state="new",
+                    to_state="assigned",
+                    to_group=raw["assignment_group"],
+                    details="Routed to operational group",
+                )
+                db.add(ev_assign)
+
+                t_work = t_assign + timedelta(hours=random.uniform(1.0, 5.0))
+                ev_work = EventLog(
+                    ticket_id=t_id,
+                    activity="State_Changed",
+                    timestamp=t_work,
+                    actor="support-engineer",
+                    from_state="assigned",
+                    to_state="in_progress",
+                    from_group=raw["assignment_group"],
+                    to_group=raw["assignment_group"],
+                    details="Investigation in progress",
+                )
+                db.add(ev_work)
+
+                resolved_time = t_work + timedelta(hours=random.uniform(2.0, 16.0))
+                ticket.resolved_at = resolved_time
+                ticket.updated_at = resolved_time
+                ticket.resolution_notes = "Issue diagnosed and resolved successfully."
+                ev_res = EventLog(
+                    ticket_id=t_id,
+                    activity="Resolved",
+                    timestamp=resolved_time,
+                    actor="support-engineer",
+                    from_state="in_progress",
+                    to_state="resolved",
+                    from_group=raw["assignment_group"],
+                    to_group=raw["assignment_group"],
+                    details="Remediation verified",
+                )
+                db.add(ev_res)
+
             created_tickets.append(ticket)
 
-            if i % 500 == 0:
+            if (i + 1) % 100 == 0:
                 db.commit()
 
         db.commit()

@@ -171,9 +171,11 @@ elif active_tab == "🔍 Process Mining & Gaps":
 
     if df_events.empty or df_events["case:concept:name"].nunique() < 3:
         st.info("💡 Event log is currently empty or small. Click below to seed realistic ticket events for process mining.")
-        if st.button("🌱 Seed 200 Synthetic Ticket Lifecycles"):
-            with SessionLocal() as db:
-                seed_synthetic_tickets(count=200, db=db)
+        if st.button("🌱 Seed 200 Synthetic Ticket Lifecycles", type="primary"):
+            with st.spinner("Generating 200 realistic ticket lifecycles and process events..."):
+                with SessionLocal() as db:
+                    seed_synthetic_tickets(count=200, db=db)
+            st.success("Seeded 200 tickets with complete lifecycle event histories!")
             st.rerun()
 
     if not df_events.empty:
