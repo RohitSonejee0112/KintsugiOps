@@ -55,8 +55,8 @@ from src.process_mining.analyzer import ProcessMiningAnalyzer
 
 # Configure page layout
 st.set_page_config(
-    page_title="Enterprise ITSM AI & Process Mining Portal",
-    page_icon="⚡",
+    page_title="KintsugiOps — Enterprise AI & Process Mining Portal",
+    page_icon="✨",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -159,7 +159,7 @@ current_persona = DEMO_PERSONAS[st.session_state["current_persona_key"]]
 # SIDEBAR: AUTHENTICATED PERSONA & PORTAL NAVIGATION
 # ==============================================================================
 with st.sidebar:
-    st.markdown("### ⚡ Enterprise ITSM Portal")
+    st.markdown("### ✨ KintsugiOps ITSM Portal")
     st.caption("AI Automation, Conformance Checking & Delegation Platform")
 
     # User Profile Card

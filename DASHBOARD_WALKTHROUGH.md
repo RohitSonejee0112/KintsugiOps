@@ -1,6 +1,6 @@
-# 🧭 Enterprise ITSM Portal: Walkthrough & Demonstration Guide
+# ✨ KintsugiOps: Enterprise ITSM Platform Walkthrough & Demonstration Guide
 
-This guide walks you through every section of the **AI-Assisted ITSM Automation & Process Mining Portal**, explaining **what actions to take**, **how the RBAC delegation & audit trail operates**, **what results you will observe**, and **unbeatable technical interview talking points**.
+This guide walks you through every section of **KintsugiOps** — an enterprise AI-assisted ITSM automation, conformance checking, and process mining portal. It explains **what actions to take**, **how the RBAC delegation & audit trail operates**, **what results you will observe**, and **unbeatable technical interview talking points**.
 
 ---
 
