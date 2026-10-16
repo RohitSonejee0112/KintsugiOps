@@ -14,6 +14,9 @@ import pandas as pd
 # Add project root to sys.path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+import importlib
+import src.mock_itsm.portal_service
+importlib.reload(src.mock_itsm.portal_service)
 from src.mock_itsm.database import SessionLocal, init_db, reset_db
 from src.mock_itsm.models import Ticket, EventLog, utcnow
 from src.mock_itsm.portal_service import PortalService, DEMO_PERSONAS, SUPPORT_ENGINEERS
@@ -314,8 +317,16 @@ if active_tab == "🎯 Live Triage Console":
         st.markdown("---")
         st.markdown("##### 🚀 Tiered Ticket Delegation & Routing")
 
-        # Query eligible engineers based on Category & Priority
-        eligible_engineers, default_idx = PortalService.get_eligible_engineers(
+        # Query eligible engineers based on Category & Priority (with automatic reload check)
+        if not hasattr(PortalService, "get_eligible_engineers"):
+            import importlib
+            import src.mock_itsm.portal_service as ps_mod
+            importlib.reload(ps_mod)
+            get_eligible_fn = getattr(ps_mod.PortalService, "get_eligible_engineers")
+        else:
+            get_eligible_fn = PortalService.get_eligible_engineers
+
+        eligible_engineers, default_idx = get_eligible_fn(
             category=triage_res.category,
             priority=triage_res.priority
         )
