@@ -2,7 +2,7 @@
 import os
 from pathlib import Path
 from typing import Generator
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
 # Default to local SQLite database in data directory
@@ -34,8 +34,15 @@ def get_db() -> Generator[Session, None, None]:
 
 
 def init_db() -> None:
-    """Create all database tables."""
+    """Create all database tables and ensure schema migrations."""
     Base.metadata.create_all(bind=engine)
+    with engine.connect() as conn:
+        try:
+            conn.execute(text("ALTER TABLE tickets ADD COLUMN assigned_by VARCHAR(100)"))
+            conn.commit()
+        except Exception:
+            # Column already exists or table was freshly created with it
+            pass
 
 
 def reset_db() -> None:

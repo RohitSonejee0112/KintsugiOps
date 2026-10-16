@@ -165,8 +165,10 @@ with st.sidebar:
     with st.expander("👤 Switch Authenticated Persona"):
         persona_options = {
             "dispatcher": "Sarah Connor (Dispatcher / Triage Lead)",
+            "engineer_erp": "David Miller (ERP Systems Lead)",
             "engineer_l2": "Alice Cooper (Support Engineer L2)",
             "engineer_iam": "Bob Martinez (IAM Specialist)",
+            "engineer_net": "Carol Danvers (Network Operations Lead)",
             "end_user": "Allison Hill (End-User Employee)",
             "executive_auditor": "Elena Vance (Service Delivery Lead)",
         }
@@ -308,21 +310,60 @@ if active_tab == "🎯 Live Triage Console":
         if triage_res.suggested_kb_articles:
             st.info(f"📚 RAG Knowledge Base Articles Suggested: {', '.join(triage_res.suggested_kb_articles)}")
 
-        # Ticket Delegation Section
+        # Tiered Ticket Delegation Section
         st.markdown("---")
-        st.markdown("##### 🚀 Delegate / Assign This Ticket")
-        del_col1, del_col2 = st.columns(2)
+        st.markdown("##### 🚀 Tiered Ticket Delegation & Routing")
+
+        # Query eligible engineers based on Category & Priority
+        eligible_engineers, default_idx = PortalService.get_eligible_engineers(
+            category=triage_res.category,
+            priority=triage_res.priority
+        )
+
+        p_num = triage_res.priority
+        team_name = eligible_engineers[0]["category"] if eligible_engineers else triage_res.category
+        if p_num == 1:
+            st.error(
+                f"🚨 **ITIL Seniority Protocol (P1 Critical):** Incident restricted strictly to "
+                f"**Team Lead / Manager** (`{len(eligible_engineers)}` eligible member in `{team_name}`). "
+                f"Preferred lead pre-selected automatically."
+            )
+        elif p_num == 2:
+            st.warning(
+                f"⚠️ **ITIL Seniority Protocol (P2 High):** Incident restricted to "
+                f"**Senior Engineers & Team Lead** (`{len(eligible_engineers)}` eligible members in `{team_name}`). "
+                f"Junior staff are restricted from P2 dispatch."
+            )
+        else:
+            st.info(
+                f"ℹ️ **ITIL Seniority Protocol (P{p_num} Standard):** Ticket open for dispatch to "
+                f"**all {len(eligible_engineers)} team members** (Lead, Seniors, and Juniors) in `{team_name}`."
+            )
+
+        del_col1, del_col2 = st.columns([2, 1])
         with del_col1:
-            engineer_emails = [e["email"] for e in SUPPORT_ENGINEERS]
+            eligible_emails = [e["email"] for e in eligible_engineers]
+
+            def format_eng_option(email_addr: str) -> str:
+                eng = next((e for e in eligible_engineers if e["email"] == email_addr), None)
+                if not eng:
+                    return email_addr
+                star = " ⭐ Preferred Default" if eng.get("is_preferred") else ""
+                seniority_tag = eng.get("seniority", "").upper()
+                return f"{eng['name']} — {eng.get('title', eng['name'])} [{seniority_tag}]{star}"
+
+            widget_key = f"assign_eng_select_{triage_res.category}_{triage_res.priority}_{abs(hash(title)) % 100000}"
             selected_engineer = st.selectbox(
-                "Assign To Engineer",
-                options=engineer_emails,
-                format_func=lambda em: next(f"{e['name']} ({e['group']})" for e in SUPPORT_ENGINEERS if e["email"] == em),
-                key="assign_engineer_dropdown"
+                "Choose Assignee (Pre-filled preferred engineer, customizable by dispatcher):",
+                options=eligible_emails,
+                index=default_idx if 0 <= default_idx < len(eligible_emails) else 0,
+                format_func=format_eng_option,
+                key=widget_key
             )
         with del_col2:
-            engineer_group = next(e["group"] for e in SUPPORT_ENGINEERS if e["email"] == selected_engineer)
-            st.text_input("Operational Group", value=engineer_group, disabled=True)
+            selected_eng_obj = next((e for e in eligible_engineers if e["email"] == selected_engineer), eligible_engineers[0])
+            st.text_input("Assigned Team / Group", value=selected_eng_obj["group"], disabled=True)
+            st.caption(f"Role: **{selected_eng_obj.get('title', selected_eng_obj['name'])}**")
 
         if st.button("📤 Assign & Dispatch Ticket to Engineer", type="secondary", use_container_width=True):
             with SessionLocal() as db:
@@ -340,7 +381,7 @@ if active_tab == "🎯 Live Triage Console":
                     ticket_id=created.id,
                     assigned_to=selected_engineer,
                     assigned_by=current_persona["email"],
-                    target_group=engineer_group,
+                    target_group=selected_eng_obj["group"],
                     notes=f"Dispatched via Live Console by {current_persona['name']}"
                 )
             st.success(f"✅ Ticket `{created.id}` successfully delegated to `{selected_engineer}` by `{current_persona['email']}`!")

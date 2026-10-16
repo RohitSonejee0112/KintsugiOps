@@ -20,15 +20,17 @@ Open your browser to: **`http://localhost:8501`**
 
 ### 1. Concept & Multi-Role Architecture
 Unlike a simple dashboard, this platform functions as a full-fledged **Enterprise ITSM Portal** featuring **Role-Based Access Control (RBAC)**:
-- **`Sarah Connor` (Dispatcher / Triage Lead)**: `dispatcher@corp.com` — Triages incoming incidents, reviews AI evidence, delegates tickets to engineers, and tracks live status feeds.
-- **`Alice Cooper` (Support Engineer L2)**: `tech-alice@corp.com` — Receives delegated tickets in her assigned inbox, transitions states (`In Progress` $\to$ `Resolved`), and adds resolution notes.
-- **`Bob Martinez` (Identity Specialist)**: `tech-bob@corp.com` — Handles sensitive IAM access requests, password resets, and Active Directory unlocks.
+- **`Sarah Connor` (Dispatcher / Triage Lead)**: `dispatcher@corp.com` — Triages incoming incidents, reviews AI evidence, delegates tickets to engineers according to ITIL seniority rules, and tracks live status feeds.
+- **`David Miller` (ERP Systems Lead)**: `david.miller@corp.com` — Enterprise ERP & SAP Lead. Automatically pre-selected as the default assignee for all ERP/SAP tickets.
+- **`Alice Cooper` (Desktop Support Lead)**: `tech-alice@corp.com` — Hardware team lead. Automatically pre-selected as the default assignee for Hardware tickets.
+- **`Bob Martinez` (IAM Specialist / Lead)**: `tech-bob@corp.com` — Identity team lead. Automatically pre-selected as default assignee for Access/IAM tickets.
+- **`Carol Danvers` (Network Operations Lead)**: `specialist-carol@corp.com` — Network team lead. Automatically pre-selected as default assignee for Network tickets.
 - **`Allison Hill` (End-User Employee)**: `allison.hill@corp.com` — Submits service requests and tracks resolution progress.
 - **`Elena Vance` (Service Delivery Lead / Auditor)**: `elena.auditor@corp.com` — Audits ITIL conformance, process mining bottlenecks, and SharePoint structural proposals.
 
 ### 2. Actions to Take
 1. Look at the **User Profile Card** at the top of the sidebar.
-2. Click **"👤 Switch Authenticated Persona"** to switch between **Dispatcher**, **Support Engineer**, **End-User**, or **Auditor** in 1 click.
+2. Click **"👤 Switch Authenticated Persona"** to switch between **Dispatcher (Sarah Connor)**, **ERP Lead (David Miller)**, **Desktop Support (Alice Cooper)**, **IAM Lead (Bob Martinez)**, **Network Lead (Carol Danvers)**, **End-User (Allison Hill)**, or **Auditor (Elena Vance)** in 1 click.
 3. Use the **Clickable Portal Navigation** buttons on the left to move between views:
    - `🎯 Live Triage Console`
    - `📥 Operational Inbox & Delegation Tracker`
@@ -41,18 +43,40 @@ Unlike a simple dashboard, this platform functions as a full-fledged **Enterpris
 ## 🎯 View 1: Live Triage Console
 
 ### 1. Purpose & Concept
-Real-time ticket intake, **security guardrails (PII redaction & prompt injection defense)**, **Split Conformal Prediction** (statistically bounded $< 5\%$ error rate), **Vector Semantic Caching & Outage Storm Clustering**, **Ticket Delegation**, and **Audit Dossier Exporting**.
+Real-time ticket intake, **security guardrails (PII redaction & prompt injection defense)**, **Split Conformal Prediction** (statistically bounded $< 5\%$ error rate), **Vector Semantic Caching & Outage Storm Clustering**, **Tiered Seniority Delegation Engine (20 Engineers Across 4 Domains)**, and **Audit Dossier Exporting**.
 
-### 2. Actions to Take
+### 2. Tiered Seniority Delegation Matrix (20 Support Engineers)
+The portal features exactly 20 support engineers distributed across 4 technical domains (5 members per domain):
+
+| Domain / Type | Operational Group | Team Lead (P1, P2, P3, P4) ⭐ Preferred Default | Senior Engineers (P2, P3, P4) | Junior Engineers (P3, P4 only) |
+|---|---|---|---|---|
+| **Type 1: ERP / SAP** | `Enterprise-ERP-Support` | **David Miller** (`david.miller@corp.com`) | Kavita Patel, Marcus Vance | Siddharth Rao, Chloe Bennett |
+| **Type 2: Hardware** | `Desktop-Support-L2` | **Alice Cooper** (`tech-alice@corp.com`) | James Wilson, Rachel Green | Lucas Scott, Maya Lin |
+| **Type 3: Network** | `Network-Infrastructure-Ops` | **Carol Danvers** (`specialist-carol@corp.com`) | Vikram Malhotra, Samantha Cole | Ethan Hunt, Priya Sharma |
+| **Type 4: Access / Identity** | `IAM-Identity-Operations` | **Bob Martinez** (`tech-bob@corp.com`) | Fatima Zahra, Liam O'Connor | Noah Clark, Zara Ahmed |
+
+#### ITIL Delegation Rules Enforced:
+- **Strict Category Isolation**: Only engineers of that specific ticket category appear in the dropdown. E.g., an ERP ticket will *never* show Hardware or Network staff.
+- **Priority 1 (Critical Outage)**: Restricted strictly to the **Team Lead / Manager** (exactly 1 engineer shown).
+- **Priority 2 (High Priority)**: Restricted to **Lead + Senior Engineers** (exactly 3 engineers shown; Juniors excluded).
+- **Priority 3 / 4 (Standard / Low)**: Open to **all 5 members** (1 Lead + 2 Seniors + 2 Juniors).
+- **Automatic Pre-Filled Preferred Default**:
+  - When an ERP ticket is generated, **David Miller is automatically pre-selected** by default.
+  - Dispatcher **Sarah Connor has full authority to change the assignee** to any other eligible member in the dropdown before dispatching.
+
+### 3. Actions to Take
 1. Click **"🎲 Generate Realistic Random Ticket"** to populate realistic enterprise scenarios.
 2. Inspect the **PII Guardrail** alert: emails and IPs are automatically sanitized before model inference.
 3. Review the **Conformal Calibration Status**:
    - If singleton ($|\Gamma| = 1$), a green badge confirms statistical safety ($\le 5\%$ error, $95\%$ coverage).
    - Click **"ℹ️ Conformal Calibration & Statistical Theory Details"** for in-depth mathematical notes.
-4. **Delegate / Assign Ticket**:
-   - In the **"🚀 Delegate / Assign This Ticket"** box, pick an engineer (e.g. `Alice Cooper (Desktop-Support-L2)`).
+4. **Inspect the Tiered Delegation Section**:
+   - Notice the ITIL protocol badge highlighting eligible seniority tiers for the ticket's priority.
+   - For an ERP ticket, notice **David Miller** is pre-filled as default assignee!
+   - Expand the dropdown: observe that only ERP engineers are shown (1 member for P1, 3 members for P2, 5 members for P3).
+   - If desired, change the assignee (e.g. choose `Kavita Patel [SENIOR]`).
    - Click **"📤 Assign & Dispatch Ticket to Engineer"**.
-   - Notice the toast confirmation: the assignment is persisted in SQLite with `assigned_to` and `assigned_by`!
+   - Notice the confirmation toast: the assignment is persisted in SQLite with `assigned_to`, `assigned_by`, and an audit event log!
 5. **Download Dossier**:
    - Click **"📥 Download JSON Dossier"** or **"📄 Download Markdown Dossier"** to export the complete audit record.
 6. Click **"⚡ Execute Auto-Runbook"** on Access tickets for instant self-service resolution.
