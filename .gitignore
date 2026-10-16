@@ -54,5 +54,5 @@ local_sharepoint/
 .coverage
 htmlcov/
 
-# Streamlit
-.streamlit/
+# Streamlit secrets (keep config.toml)
+.streamlit/secrets.toml

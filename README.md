@@ -4,6 +4,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-1.0.0-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![pm4py](https://img.shields.io/badge/Process_Mining-pm4py-FF6F00)](https://pm4py.fit.fraunhofer.de/)
 [![Streamlit](https://img.shields.io/badge/Dashboard-Streamlit-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/)
 [![Conformal Prediction](https://img.shields.io/badge/Calibration-Split_Conformal_(α=0.05)-10B981)](https://arxiv.org/abs/2107.07511)
 [![Tests Passing](https://img.shields.io/badge/Tests-48%20Passed-brightgreen)](https://pytest.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -121,7 +122,17 @@ Simulated comparison over **1,000 synthetic enterprise tickets** across all 4 op
 
 ---
 
-## 🚀 Quickstart Guide
+## 🚀 Quickstart & Live Demo
+
+### 🌐 1-Click Cloud Demo (No Local Setup Required)
+You can launch and interact with KintsugiOps directly in the cloud via **Streamlit Community Cloud**:
+1. Sign in to [share.streamlit.io](https://share.streamlit.io) with your GitHub account.
+2. Click **"New app"**, select repository `RohitSonejee0112/KintsugiOps`, branch `main`, and main file path `src/dashboard/app.py`.
+3. Click **"Deploy"** — Streamlit automatically configures dependencies from `requirements.txt` and gives you a permanent, public, clickable URL (e.g. `https://kintsugiops.streamlit.app`)!
+
+---
+
+### 💻 Local Development Setup
 
 ### Prerequisites
 - **Python 3.11+**
