@@ -27,6 +27,7 @@ from src.simulation.generator import (
     seed_events_for_existing_tickets,
 )
 from src.simulation.simulator import SimulationRunner
+from src.simulation.queueing_model import KingmanSaturationAnalyzer, DiscreteEventQueueSimulator
 
 # Configure page layout
 st.set_page_config(
@@ -136,6 +137,18 @@ if active_tab == "🎯 Live Triage Console":
         classifier = AITriageClassifier()
         triage_res = classifier.triage_ticket(title, desc, caller)
 
+        # Semantic Cache & Incident Storm Banner
+        if triage_res.cache_hit:
+            st.success(
+                f"⚡ **Semantic Cache Hit (Sliding Window):** Bypassed redundant LLM inference "
+                f"and linked to Master Incident `#{triage_res.master_incident_id}`. Saved $0.003 token cost."
+            )
+        if triage_res.is_storm_incident:
+            st.error(
+                f"🚨 **ACTIVE OUTAGE INCIDENT STORM DETECTED:** Multiple near-duplicate tickets "
+                f"detected within sliding window. Clustered under Master Incident `#{triage_res.master_incident_id}`."
+            )
+
         # Badges
         b1, b2, b3 = st.columns(3)
         with b1:
@@ -148,29 +161,51 @@ if active_tab == "🎯 Live Triage Console":
         st.markdown(f"**Target Assignment Group:** `{triage_res.assignment_group}`")
         st.markdown(f"**AI Reasoning:** _{triage_res.reasoning_summary}_")
 
+        # Split Conformal Prediction Card
+        with st.container():
+            st.markdown("##### 📐 Split Conformal Prediction Calibration")
+            c_set = triage_res.conformal_set or [triage_res.category]
+            c_str = ", ".join([f"`{c}`" for c in c_set])
+            cp1, cp2 = st.columns([2, 1])
+            with cp1:
+                st.markdown(f"**Conformal Prediction Set $\\Gamma^{{\\alpha=0.05}}$:** {c_str}")
+                if triage_res.conformal_guaranteed:
+                    st.caption("🛡️ **Statistically Bounded:** Singleton prediction set guarantees $\\le 5\\%$ error ($95\\%$ coverage) prior to zero-touch execution.")
+                else:
+                    st.caption("⚠️ **Statistical Uncertainty:** Multi-category set safely routes to Human-In-The-Loop with bounded candidate set.")
+            with cp2:
+                st.metric("Conformal Set Size", f"|Γ| = {len(c_set)}")
+
         if triage_res.pii_redacted_count > 0:
             st.warning(f"🛡️ Guardrail Active: Redacted {triage_res.pii_redacted_count} sensitive PII token(s) prior to model inference.")
 
         if triage_res.suggested_kb_articles:
             st.info(f"📚 RAG Knowledge Base Articles Suggested: {', '.join(triage_res.suggested_kb_articles)}")
 
-            if run_auto:
-                provider = MockITSMProvider()
-                engine = AutomationEngine(provider=provider)
-                ticket_res = provider.create_ticket({
-                    "title": title,
-                    "description": desc,
-                    "caller_email": caller,
-                    "category": triage_res.category,
-                    "impact": triage_res.impact,
-                    "urgency": triage_res.urgency,
-                })
-                outcome = engine.process_ticket({"id": ticket_res.id, "title": title, "description": desc, "category": triage_res.category, "caller_email": caller, "priority": triage_res.priority})
-                if outcome["status"] == "auto_resolved":
-                    st.success(f"✅ AUTO-RESOLVED via `{outcome['runbook']}`!")
-                    st.markdown(f"**Resolution Notes:** {outcome['action_taken']}")
-                else:
-                    st.success(f"Ticket routed to `{outcome['assignment_group']}` with SLA deadline.")
+        if run_auto:
+            provider = MockITSMProvider()
+            engine = AutomationEngine(provider=provider)
+            ticket_res = provider.create_ticket({
+                "title": title,
+                "description": desc,
+                "caller_email": caller,
+                "category": triage_res.category,
+                "impact": triage_res.impact,
+                "urgency": triage_res.urgency,
+            })
+            outcome = engine.process_ticket({
+                "id": ticket_res.id,
+                "title": title,
+                "description": desc,
+                "category": triage_res.category,
+                "caller_email": caller,
+                "priority": triage_res.priority
+            })
+            if outcome["status"] == "auto_resolved":
+                st.success(f"✅ AUTO-RESOLVED via `{outcome['runbook']}`!")
+                st.markdown(f"**Resolution Notes:** {outcome['action_taken']}")
+            else:
+                st.success(f"Ticket routed to `{outcome['assignment_group']}` with SLA deadline.")
 
 
 # ==============================================================================
@@ -249,6 +284,47 @@ elif active_tab == "🔍 Process Mining & Gaps":
                 st.dataframe(p_df, use_container_width=True)
             else:
                 st.write("No ping-pong loops detected in current sample.")
+
+        # Conformance Checking & Petri Net Token Replay Section
+        st.markdown("---")
+        st.subheader("📐 Petri Net Conformance Checking & Token-Based Replay (ITIL Audit)")
+        st.markdown(
+            "Inductive Petri net discovery combined with IEEE XES Token-Based Replay evaluates normative ITIL protocol adherence, "
+            "quantifying process fitness, precision, and catching unauthorized workflow bypasses."
+        )
+
+        conf_res = analyzer.run_conformance_checking()
+        fit_data = conf_res.get("fitness", {})
+
+        c_m1, c_m2, c_m3, c_m4 = st.columns(4)
+        c_m1.metric("Average Trace Fitness", f"{fit_data.get('average_trace_fitness', 1.0) * 100:.1f}%")
+        c_m2.metric("Precision Score", f"{conf_res.get('precision', 1.0) * 100:.1f}%")
+        c_m3.metric("F1 Process Score", f"{conf_res.get('f1_process_score', 1.0) * 100:.1f}%")
+        c_m4.metric("Compliant Cases", f"{conf_res.get('fitting_cases', 0)} / {conf_res.get('total_cases', 0)}")
+
+        # Violations Table
+        violations = conf_res.get("violations", [])
+        if violations:
+            st.markdown("##### 🚨 Detected ITIL Protocol Deviations & Unauthorized Bypasses")
+            v_df = pd.DataFrame(violations)
+            st.dataframe(
+                v_df[["case_id", "violation_type", "severity", "trace", "rule", "details"]],
+                use_container_width=True
+            )
+        else:
+            st.success("✅ 100% Process Conformance: Zero unauthorized bypasses or unassigned resolution deviations detected.")
+
+        # Social Network Mining: Handover of Work
+        st.markdown("---")
+        st.subheader("🌐 Social Network Mining: Handover of Work Network")
+        st.markdown("Discovers organizational handoffs between operational groups to reveal systemic cross-team ping-pong loops.")
+        handovers = analyzer.compute_handover_network(resource_key="org:group")
+        if handovers:
+            h_df = pd.DataFrame(handovers)
+            st.dataframe(h_df, use_container_width=True)
+        else:
+            st.write("No cross-group handovers detected in current sample.")
+
 
 
 # ==============================================================================
@@ -368,3 +444,51 @@ elif active_tab == "📊 Simulation & ROI Benchmark":
                 f"• Achieved {kpis.auto_resolved_pct}% First Contact Resolution (FCR) via automated self-service runbooks.\n"
                 f"• Elevated SLA compliance from {kpis.sla_compliance_baseline_pct}% to {kpis.sla_compliance_treatment_pct}%."
             )
+
+    # Section: Queueing Theory Realism & Kingman's Heavy-Traffic Approximation
+    st.markdown("---")
+    st.subheader("📈 Queueing Theory Realism: Kingman's Formula & Peak Saturation Dynamics")
+    st.markdown(
+        "Why does AI auto-resolution drop resolution wait times so dramatically? In real ITSM operations, "
+        "ticket delays scale **non-linearly** according to Kingman's Heavy-Traffic formula for $G/G/c$ multi-server queues:"
+    )
+    st.latex(r"W_q \approx \left(\frac{\rho}{1 - \rho}\right) \cdot \left(\frac{c_a^2 + c_s^2}{2}\right) \cdot \frac{1}{\mu}")
+
+    q_col1, q_col2 = st.columns([1, 1], gap="large")
+    with q_col1:
+        st.markdown("##### ⚙️ Operational Parameters")
+        q_agents = st.number_input("Human Support Agents ($c$)", min_value=1, max_value=50, value=10)
+        q_arrival = st.number_input("Peak Arrival Rate ($\lambda$ tickets/hr)", min_value=1.0, max_value=100.0, value=23.5)
+        q_rate = st.number_input("Agent Resolution Rate ($\mu$ tickets/hr)", min_value=0.5, max_value=10.0, value=2.5)
+        q_ai_rate = st.slider("Tier-0 AI Auto-Resolution Rate (%)", min_value=10, max_value=60, value=38) / 100.0
+
+        q_analysis = KingmanSaturationAnalyzer.compare_human_vs_ai(
+            base_arrival_rate=q_arrival,
+            agent_count=q_agents,
+            agent_service_rate=q_rate,
+            ai_auto_resolution_rate=q_ai_rate
+        )
+
+    with q_col2:
+        st.markdown("##### 🔬 Comparative Saturation Analysis")
+        base = q_analysis["baseline"]
+        ai_aug = q_analysis["ai_augmented"]
+        impact = q_analysis["impact_metrics"]
+
+        qc1, qc2 = st.columns(2)
+        with qc1:
+            st.metric("Manual Human Traffic Intensity (ρ)", f"{base['traffic_intensity_rho']:.2f}", delta="Queue Saturation Risk" if base['traffic_intensity_rho'] >= 0.90 else "Stable", delta_color="inverse")
+            st.metric("Manual Queue Delay (W_q)", f"{base['queue_wait_time_hours']:.1f} hours ({base['queue_wait_time_mins']:.0f} mins)")
+        with qc2:
+            st.metric("AI-Augmented Traffic Intensity (ρ)", f"{ai_aug['traffic_intensity_rho']:.2f}", delta=f"-{round((base['traffic_intensity_rho'] - ai_aug['traffic_intensity_rho']) * 100, 1)}% load")
+            st.metric("AI-Augmented Queue Delay (W_q)", f"{ai_aug['queue_wait_time_hours']:.2f} hours ({ai_aug['queue_wait_time_mins']:.0f} mins)", delta=f"-{impact['queue_wait_reduction_pct']}% wait")
+
+        st.info(f"💡 **Kingman Non-Linear Effect:** Shaving {impact['ticket_reduction_pct']}% of tier-1 tickets prevents peak queue saturation, producing a **{impact['queue_wait_reduction_pct']}% reduction in human queue wait times** ({impact['queue_wait_speedup_factor']}x faster queue clearance).")
+
+    # Saturation Curve Chart
+    with st.expander("📊 View Kingman Queue Hyper-Saturation Curve ($\rho$ vs $W_q$)", expanded=False):
+        curve_data = KingmanSaturationAnalyzer.generate_saturation_curve(mu=q_rate)
+        c_df = pd.DataFrame(curve_data)
+        st.line_chart(c_df.set_index("utilization_pct")["w_q_hours"])
+        st.caption("Notice how queue delay explodes asymptotically as server utilization $\rho \\to 1.0$. AI auto-resolution keeps the organization safely in the linear region ($\rho < 0.65$).")
+

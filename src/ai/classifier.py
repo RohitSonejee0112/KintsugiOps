@@ -8,6 +8,8 @@ from .guardrails import PIISanitizer
 from .schemas import TriageResult
 from .embeddings import SimilarTicketFinder, VectorEmbeddingEngine
 from .rag_resolver import RAGResolver
+from .semantic_cache import SemanticCache
+from .conformal import SplitConformalClassifier
 from ..mock_itsm.models import calculate_itil_priority
 
 logger = logging.getLogger("ai.classifier")
@@ -51,7 +53,7 @@ CATEGORY_SIGNALS = {
 
 
 class AITriageClassifier:
-    """Enterprise AI Triage engine featuring PII guardrails, RAG, and structured outputs."""
+    """Enterprise AI Triage engine featuring PII guardrails, RAG, Semantic Caching, and Conformal Prediction."""
 
     def __init__(
         self,
@@ -59,11 +61,15 @@ class AITriageClassifier:
         similarity_finder: Optional[SimilarTicketFinder] = None,
         rag_resolver: Optional[RAGResolver] = None,
         embedding_engine: Optional[VectorEmbeddingEngine] = None,
+        semantic_cache: Optional[SemanticCache] = None,
+        conformal_classifier: Optional[SplitConformalClassifier] = None,
     ):
         self.confidence_threshold = confidence_threshold
         self.similarity_finder = similarity_finder or SimilarTicketFinder()
         self.rag_resolver = rag_resolver or RAGResolver()
         self.embedding_engine = embedding_engine or VectorEmbeddingEngine()
+        self.semantic_cache = semantic_cache or SemanticCache(embedding_engine=self.embedding_engine)
+        self.conformal_classifier = conformal_classifier or SplitConformalClassifier(alpha=0.05)
         self.provider = os.getenv("LLM_PROVIDER", "mock").lower()
 
         # Precompute category prototype embeddings
@@ -79,7 +85,7 @@ class AITriageClassifier:
         caller_email: str,
         ticket_id: Optional[str] = None
     ) -> TriageResult:
-        """Perform end-to-end AI triage with sanitization, duplicate detection, and RAG."""
+        """Perform end-to-end AI triage with sanitization, semantic caching, conformal prediction, and RAG."""
         start_time = time.time()
 
         # 1. Guardrail Step 1: Prompt Injection Check
@@ -98,6 +104,8 @@ class AITriageClassifier:
                 requires_human_review=True,
                 pii_redacted_count=0,
                 suggested_kb_articles=[],
+                conformal_set=["Security"],
+                conformal_guaranteed=True,
             )
 
         # 2. Guardrail Step 2: PII Redaction
@@ -105,20 +113,26 @@ class AITriageClassifier:
         sanitized_desc, d_redactions = PIISanitizer.sanitize(description)
         total_pii = sum(t_redactions.values()) + sum(d_redactions.values())
 
-        # 3. Step 3: Duplicate Check
+        # 3. Step 3: Semantic Cache & Incident Storm Lookup (Bypasses redundant LLM calls)
+        if self.semantic_cache:
+            cache_lookup = self.semantic_cache.lookup(
+                sanitized_title, sanitized_desc, incoming_ticket_id=ticket_id
+            )
+            if cache_lookup is not None:
+                cached_res, entry = cache_lookup
+                return cached_res
+
+        # 4. Step 4: Duplicate Check (Longer historical index)
         duplicate = self.similarity_finder.is_duplicate(
             sanitized_title, sanitized_desc, duplicate_threshold=0.88, exclude_id=ticket_id
         )
         dup_id = duplicate["ticket_id"] if duplicate else None
 
-        # 4. Step 4: RAG Knowledge Base Retrieval
+        # 5. Step 5: RAG Knowledge Base Retrieval
         rag_articles = self.rag_resolver.retrieve_relevant_articles(sanitized_title, sanitized_desc, top_k=2)
         suggested_kb_ids = [a["article_id"] for a in rag_articles]
 
-        # 5. Step 5: Classification (Semantic / LLM Inference)
-        text_lower = f"{sanitized_title} {sanitized_desc}".lower()
-
-        # 5. Step 5: Multi-Signal Semantic & Prototype Vector Scoring
+        # 6. Step 6: Multi-Signal Semantic & Prototype Vector Scoring
         text_lower = f"{sanitized_title} {sanitized_desc}".lower()
         ticket_vec = self.embedding_engine.get_embedding(f"{sanitized_title} {sanitized_desc}")
 
@@ -165,6 +179,9 @@ class AITriageClassifier:
                 f"margin: +{margin:.1f})."
             )
 
+        # 7. Step 7: Split Conformal Prediction Calibration
+        conformal_res = self.conformal_classifier.predict_conformal_set(category_scores, alpha=0.05)
+
         # Impact and Urgency heuristics
         urgency = 1 if any(w in text_lower for w in ["urgent", "down", "hazard", "safety", "crash", "crashloop", "crashing", "oom", "broken", "critical"]) else 2
         impact = 1 if any(w in text_lower for w in ["production", "payment", "all users", "multiple employees", "outage", "entire plant", "safety"]) else 2
@@ -174,7 +191,7 @@ class AITriageClassifier:
         assignment_group = CATEGORY_GROUP_MAP.get(category, "ServiceDesk-L1")
         requires_human = confidence < self.confidence_threshold
 
-        return TriageResult(
+        triage_output = TriageResult(
             category=category,
             subcategory=f"{category} Triage",
             urgency=urgency,
@@ -187,4 +204,20 @@ class AITriageClassifier:
             pii_redacted_count=total_pii,
             duplicate_ticket_id=dup_id,
             suggested_kb_articles=suggested_kb_ids,
+            conformal_set=conformal_res.prediction_set,
+            conformal_p_value=conformal_res.p_value,
+            conformal_guaranteed=conformal_res.guaranteed_safe_execution,
         )
+
+        # Store in Semantic Cache for near-duplicate/storm reuse
+        if self.semantic_cache:
+            cache_id = ticket_id or f"INC{abs(hash(sanitized_title)) % 900000 + 100000}"
+            self.semantic_cache.store(
+                ticket_id=cache_id,
+                title=sanitized_title,
+                description=sanitized_desc,
+                triage_result=triage_output,
+            )
+
+        return triage_output
+

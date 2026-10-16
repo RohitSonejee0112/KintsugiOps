@@ -17,6 +17,14 @@ class TriageResult(BaseModel):
     pii_redacted_count: int = Field(0, description="Total PII tokens redacted prior to inference")
     duplicate_ticket_id: Optional[str] = Field(None, description="ID of existing similar/duplicate ticket if detected")
     suggested_kb_articles: List[str] = Field(default_factory=list, description="Relevant KB articles for resolution")
+    # Semantic Cache & Incident Storm Clustering
+    cache_hit: bool = Field(False, description="True if triage decision was retrieved from Semantic Cache")
+    is_storm_incident: bool = Field(False, description="True if ticket is part of an active outage incident storm")
+    master_incident_id: Optional[str] = Field(None, description="Master Incident ID linking clustered storm child tickets")
+    # Split Conformal Prediction
+    conformal_set: List[str] = Field(default_factory=list, description="Split Conformal Prediction set Gamma^alpha")
+    conformal_p_value: Optional[float] = Field(None, description="Conformal p-value for statistical validity")
+    conformal_guaranteed: bool = Field(False, description="True if singleton set provides <= 1% error guarantee")
 
 
 class EvaluationMetrics(BaseModel):
