@@ -121,6 +121,24 @@ st.markdown("""
         font-weight: 800 !important;
         font-size: 1.12em;
     }
+    /* Prevent ellipsis (...) truncation on st.metric cards */
+    div[data-testid="stMetricValue"] {
+        white-space: normal !important;
+        word-break: break-word !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        font-size: 1.4rem !important;
+        line-height: 1.25 !important;
+    }
+    div[data-testid="stMetricValue"] > div {
+        white-space: normal !important;
+        word-break: break-word !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+    }
+    div[data-testid="stMetric"] {
+        overflow: visible !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -273,8 +291,8 @@ if active_tab == "🎯 Live Triage Console":
                 f"detected within sliding window. Clustered under Master Incident `#{master_id}`."
             )
 
-        # Key Metric Cards
-        b1, b2, b3 = st.columns(3)
+        # Key Metric Cards (domain column given 1.6x width to accommodate longer names)
+        b1, b2, b3 = st.columns([1.6, 0.7, 0.7])
         b1.metric("Predicted Domain", triage_res.category)
         b2.metric("ITIL Priority", f"P{triage_res.priority}")
         b3.metric("Model Confidence", f"{int(triage_res.confidence_score * 100)}%")
