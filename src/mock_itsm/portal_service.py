@@ -82,7 +82,7 @@ class PortalService:
         prev_state = ticket.state
 
         ticket.assigned_to = assigned_to
-        ticket.assigned_by = assigned_by
+        setattr(ticket, "assigned_by", assigned_by)
         if target_group:
             ticket.assignment_group = target_group
         ticket.state = "assigned"
@@ -171,7 +171,9 @@ class PortalService:
     @staticmethod
     def get_delegated_tickets(db: Session, dispatcher_email: str) -> List[Ticket]:
         """Return tickets that were delegated by this dispatcher/user."""
-        return db.query(Ticket).filter(Ticket.assigned_by == dispatcher_email).order_by(desc(Ticket.updated_at)).all()
+        if hasattr(Ticket, "assigned_by"):
+            return db.query(Ticket).filter(Ticket.assigned_by == dispatcher_email).order_by(desc(Ticket.updated_at)).all()
+        return []
 
     @staticmethod
     def get_submitted_tickets(db: Session, caller_email: str) -> List[Ticket]:
@@ -181,14 +183,11 @@ class PortalService:
     @staticmethod
     def get_delegation_audit_feed(db: Session, user_email: str, limit: int = 12) -> List[Dict[str, Any]]:
         """Return real-time audit feed of events on tickets assigned by or to this user."""
-        # Find ticket IDs associated with this user
-        relevant_ticket_ids = [
-            t[0] for t in db.query(Ticket.id).filter(
-                (Ticket.assigned_by == user_email) |
-                (Ticket.assigned_to == user_email) |
-                (Ticket.caller_email == user_email)
-            ).all()
-        ]
+        filter_cond = (Ticket.assigned_to == user_email) | (Ticket.caller_email == user_email)
+        if hasattr(Ticket, "assigned_by"):
+            filter_cond = filter_cond | (Ticket.assigned_by == user_email)
+
+        relevant_ticket_ids = [t[0] for t in db.query(Ticket.id).filter(filter_cond).all()]
 
         if not relevant_ticket_ids:
             return []
@@ -228,7 +227,7 @@ class PortalService:
                 "state": ticket.state,
                 "assignment_group": ticket.assignment_group,
                 "assigned_to": ticket.assigned_to,
-                "assigned_by": ticket.assigned_by,
+                "assigned_by": getattr(ticket, "assigned_by", None),
                 "auto_resolved": ticket.auto_resolved,
                 "resolution_notes": ticket.resolution_notes,
                 "created_at": ticket.created_at.isoformat() if ticket.created_at else None,
@@ -252,7 +251,8 @@ class PortalService:
             f"- **Category / Group:** `{ticket.category}` ➔ `{ticket.assignment_group}`",
             f"- **ITIL Priority:** `P{ticket.priority}` (Impact: {ticket.impact}, Urgency: {ticket.urgency})",
             f"- **Current State:** `{ticket.state.upper()}`",
-            f"- **Assigned To:** `{ticket.assigned_to or 'Unassigned'}` (Delegated by: `{ticket.assigned_by or 'System'}`)",
+            f"- **Assigned To:** `{ticket.assigned_to or 'Unassigned'}` (Delegated by: `{getattr(ticket, 'assigned_by', None) or 'System'}`)",
+
             "",
             "## 2. Description",
             "> " + ticket.description.replace("\n", "\n> "),

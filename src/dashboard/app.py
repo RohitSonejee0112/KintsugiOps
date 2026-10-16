@@ -359,12 +359,13 @@ if active_tab == "🎯 Live Triage Console":
             priority=triage_res.priority,
             assignment_group=triage_res.assignment_group,
             assigned_to=selected_engineer,
-            assigned_by=current_persona["email"],
             caller_email=caller,
             state="assigned",
             auto_resolved=False,
             created_at=utcnow(),
         )
+        setattr(fake_ticket, "assigned_by", current_persona["email"])
+
         triage_meta = {
             "confidence_score": triage_res.confidence_score,
             "conformal_set": conformal_set,
