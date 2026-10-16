@@ -19,38 +19,40 @@
 ```mermaid
 flowchart TD
     subgraph Ingestion ["1. Intake, Security Guardrails & Semantic Cache"]
-        A[Inbound Ticket Intake / Webhooks] --> B[PII Redactor: Mask IPs, Emails, Tokens]
-        B --> C[Prompt Injection Defense Guardrail]
-        C --> D{Sliding-Window Vector Semantic Cache}
-        D -- Near-Duplicate / Outage Storm --> E[Cluster under Master Incident ID & Bypass LLM]
-        D -- Novel Ticket Intake --> F[Embedding Vector Model: all-MiniLM-L6-v2]
+        A["Inbound Ticket Intake / Webhooks"] --> B["PII Redactor: Mask IPs, Emails, Tokens"]
+        B --> C["Prompt Injection Defense Guardrail"]
+        C --> D{"Sliding-Window Vector Semantic Cache"}
+        D -->|"Near-Duplicate / Storm"| E["Cluster under Master Incident ID & Bypass LLM"]
+        D -->|"Novel Ticket Intake"| F["Embedding Vector Model: all-MiniLM-L6-v2"]
     end
 
     subgraph Calibration ["2. Calibrated AI Triage & Conformal Calibration"]
-        F --> G[AITriageClassifier: Softmax Prediction]
-        G --> H[Split Conformal Calibration Set: 1 - α = 95%]
-        H --> I{Prediction Set Singleton?}
-        I -- Singleton |Γ| = 1 --> J[Trigger Automated Zero-Touch Runbook]
-        I -- Multi-Class Set |Γ| > 1 --> K[Flag Statistical Ambiguity & Route to HITL]
+        F --> G["AITriageClassifier: Softmax Prediction"]
+        G --> H["Split Conformal Calibration Set (1 - alpha = 95%)"]
+        H --> I{"Prediction Set Singleton?"}
+        I -->|"Singleton Set"| J["Trigger Automated Zero-Touch Runbook"]
+        I -->|"Multi-Class Set"| K["Flag Statistical Ambiguity & Route to HITL"]
     end
 
     subgraph Delegation ["3. Multi-Role RBAC & Tiered Seniority Delegation"]
-        K --> L[PortalService: Seniority Filter Matrix]
-        L --> M[P1 Critical: Team Lead Only (1 member)]
-        L --> N[P2 High: Lead + Seniors (3 members)]
-        L --> O[P3/P4: Lead + Seniors + Juniors (All 5 members)]
-        M & N & O --> P[Pre-Fill Preferred Default Assignee: e.g. David Miller for ERP]
-        P --> Q[Dispatcher Override & State Transition to SQLite]
-        Q --> R[Export Audit Dossier: JSON & Markdown]
+        K --> L["PortalService: Seniority Filter Matrix"]
+        L --> M["P1 Critical: Team Lead Only (1 member)"]
+        L --> N["P2 High: Lead + Seniors (3 members)"]
+        L --> O["P3/P4: Lead + Seniors + Juniors (All 5 members)"]
+        M --> P["Pre-Fill Preferred Default Assignee (e.g. David Miller)"]
+        N --> P
+        O --> P
+        P --> Q["Dispatcher Override & State Transition to SQLite"]
+        Q --> R["Export Audit Dossier: JSON & Markdown"]
     end
 
     subgraph MiningGovernance ["4. Petri Net Process Mining & SharePoint Governance"]
-        Q -. Lifecycle Transitions .-> S[IEEE XES Event Log Extractor]
-        S --> T[pm4py Inductive Petri Net Replay]
-        T --> U[Evaluate Fitness, Precision & F1 Score]
-        T --> V[Detect ITIL Deviations & Ping-Pong Loops]
-        V --> W[Automated SharePoint Governance Generator]
-        W --> X[(Microsoft Graph API & Offline Documentation Mirror)]
+        Q -.->|"Lifecycle Transitions"| S["IEEE XES Event Log Extractor"]
+        S --> T["pm4py Inductive Petri Net Replay"]
+        T --> U["Evaluate Fitness, Precision & F1 Score"]
+        T --> V["Detect ITIL Deviations & Ping-Pong Loops"]
+        V --> W["Automated SharePoint Governance Generator"]
+        W --> X[("Microsoft Graph API & Offline Documentation Mirror")]
     end
 ```
 
