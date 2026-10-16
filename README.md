@@ -3,11 +3,13 @@
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-1.0.0-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![pm4py](https://img.shields.io/badge/Process_Mining-pm4py-FF6F00)](https://pm4py.fit.fraunhofer.de/)
-[![Streamlit](https://img.shields.io/badge/Dashboard-Streamlit-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io/)
-[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/)
+[![Streamlit](https://img.shields.io/badge/Dashboard-Streamlit-FF4B4B?logo=streamlit&logoColor=white)](https://kintsugiops.streamlit.app)
+[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://kintsugiops.streamlit.app)
 [![Conformal Prediction](https://img.shields.io/badge/Calibration-Split_Conformal_(α=0.05)-10B981)](https://arxiv.org/abs/2107.07511)
 [![Tests Passing](https://img.shields.io/badge/Tests-48%20Passed-brightgreen)](https://pytest.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+> 🚀 **Live Interactive Demo:** Experience KintsugiOps directly in your browser with zero installation: **[https://kintsugiops.streamlit.app](https://kintsugiops.streamlit.app)**
 
 > *"**Kintsugi (金継ぎ)** is the Japanese art of repairing broken ceramics with gold lacquer — transforming fractures into points of resilient strength. In enterprise operations, outages and workflow bottlenecks are inevitable; **KintsugiOps** transforms incident chaos into self-healing, auditable, and mathematically guaranteed enterprise resilience."*
 
@@ -124,11 +126,11 @@ Simulated comparison over **1,000 synthetic enterprise tickets** across all 4 op
 
 ## 🚀 Quickstart & Live Demo
 
-### 🌐 1-Click Cloud Demo (No Local Setup Required)
-You can launch and interact with KintsugiOps directly in the cloud via **Streamlit Community Cloud**:
-1. Sign in to [share.streamlit.io](https://share.streamlit.io) with your GitHub account.
-2. Click **"New app"**, select repository `RohitSonejee0112/KintsugiOps`, branch `main`, and main file path `src/dashboard/app.py`.
-3. Click **"Deploy"** — Streamlit automatically configures dependencies from `requirements.txt` and gives you a permanent, public, clickable URL (e.g. `https://kintsugiops.streamlit.app`)!
+### 🌐 Live Cloud Demo (Instant Access)
+The portal is hosted and running live in the cloud:
+👉 **[Open KintsugiOps Live Demo: kintsugiops.streamlit.app](https://kintsugiops.streamlit.app)**
+
+*No local installation or terminal commands required — evaluate real-time AI triage with conformal calibration, 20-engineer tiered delegation, inductive Petri net process mining, and M/M/c queueing simulation directly in your browser.*
 
 ---
 
