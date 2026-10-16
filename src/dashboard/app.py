@@ -130,23 +130,36 @@ if active_tab == "🎯 Live Triage Console":
     with col_ai:
         st.subheader("2. AI Analysis & Remediation")
         import importlib
+        import src.ai.schemas
+        import src.ai.conformal
+        import src.ai.semantic_cache
         import src.ai.classifier
+        importlib.reload(src.ai.schemas)
+        importlib.reload(src.ai.conformal)
+        importlib.reload(src.ai.semantic_cache)
         importlib.reload(src.ai.classifier)
         from src.ai.classifier import AITriageClassifier
 
         classifier = AITriageClassifier()
         triage_res = classifier.triage_ticket(title, desc, caller)
 
+        # Defensive extraction of fields
+        cache_hit = getattr(triage_res, "cache_hit", False)
+        is_storm = getattr(triage_res, "is_storm_incident", False)
+        master_id = getattr(triage_res, "master_incident_id", None)
+        conformal_set = getattr(triage_res, "conformal_set", None) or [triage_res.category]
+        conformal_guaranteed = getattr(triage_res, "conformal_guaranteed", False)
+
         # Semantic Cache & Incident Storm Banner
-        if triage_res.cache_hit:
+        if cache_hit:
             st.success(
                 f"⚡ **Semantic Cache Hit (Sliding Window):** Bypassed redundant LLM inference "
-                f"and linked to Master Incident `#{triage_res.master_incident_id}`. Saved $0.003 token cost."
+                f"and linked to Master Incident `#{master_id}`. Saved $0.003 token cost."
             )
-        if triage_res.is_storm_incident:
+        if is_storm:
             st.error(
                 f"🚨 **ACTIVE OUTAGE INCIDENT STORM DETECTED:** Multiple near-duplicate tickets "
-                f"detected within sliding window. Clustered under Master Incident `#{triage_res.master_incident_id}`."
+                f"detected within sliding window. Clustered under Master Incident `#{master_id}`."
             )
 
         # Badges
@@ -164,17 +177,16 @@ if active_tab == "🎯 Live Triage Console":
         # Split Conformal Prediction Card
         with st.container():
             st.markdown("##### 📐 Split Conformal Prediction Calibration")
-            c_set = triage_res.conformal_set or [triage_res.category]
-            c_str = ", ".join([f"`{c}`" for c in c_set])
+            c_str = ", ".join([f"`{c}`" for c in conformal_set])
             cp1, cp2 = st.columns([2, 1])
             with cp1:
                 st.markdown(f"**Conformal Prediction Set $\\Gamma^{{\\alpha=0.05}}$:** {c_str}")
-                if triage_res.conformal_guaranteed:
+                if conformal_guaranteed:
                     st.caption("🛡️ **Statistically Bounded:** Singleton prediction set guarantees $\\le 5\\%$ error ($95\\%$ coverage) prior to zero-touch execution.")
                 else:
                     st.caption("⚠️ **Statistical Uncertainty:** Multi-category set safely routes to Human-In-The-Loop with bounded candidate set.")
             with cp2:
-                st.metric("Conformal Set Size", f"|Γ| = {len(c_set)}")
+                st.metric("Conformal Set Size", f"|Γ| = {len(conformal_set)}")
 
         if triage_res.pii_redacted_count > 0:
             st.warning(f"🛡️ Guardrail Active: Redacted {triage_res.pii_redacted_count} sensitive PII token(s) prior to model inference.")
