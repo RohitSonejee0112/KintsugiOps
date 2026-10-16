@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 import importlib
 import src.mock_itsm.portal_service
 importlib.reload(src.mock_itsm.portal_service)
+from sqlalchemy import desc
 from src.mock_itsm.database import SessionLocal, init_db, reset_db
 from src.mock_itsm.models import Ticket, EventLog, utcnow
 from src.mock_itsm.portal_service import PortalService, DEMO_PERSONAS, SUPPORT_ENGINEERS
@@ -596,7 +597,7 @@ elif active_tab == "📥 Operational Inbox & Delegation Tracker":
         # TAB D: ENTERPRISE TICKET REGISTER
         with t_all:
             st.subheader("All Enterprise Tickets (SQLite Database)")
-            all_tickets = db.query(Ticket).order_by(desc(Ticket.created_at)).limit(100).all()
+            all_tickets = db.query(Ticket).order_by(Ticket.created_at.desc()).limit(100).all()
             if all_tickets:
                 reg_data = [{
                     "ID": t.id,
