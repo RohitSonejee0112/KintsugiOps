@@ -224,22 +224,16 @@ KintsugiOps/
 
 ---
 
-## 🎙️ Technical Interview Talking Points
+## 🛡️ Production Engineering & Reliability Guarantees
 
-- **On Conformal Prediction Calibration:**
-  > *"Raw LLM confidence scores are notoriously overconfident and poorly calibrated. To prevent catastrophic false-positive automations, KintsugiOps implements Split Conformal Prediction with an error rate bounded at $\alpha = 0.05$. Automated runbooks only trigger when the prediction set collapses to a single candidate ($|\Gamma|=1$), providing a statistically provable safety guarantee."*
-
-- **On Outage Storm Caching:**
-  > *"During major outages, service desks are flooded with hundreds of near-duplicate tickets. We implemented a sliding-window vector semantic cache using sentence embeddings. When an incident storm hits, incoming reports are clustered under a single Master Incident ID, eliminating hundreds of redundant LLM inferences and slashing operational costs."*
-
-- **On Petri Net Process Mining:**
-  > *"Rather than relying on subjective process reviews, we standardized lifecycle events into IEEE XES event logs and synthesized inductive Petri nets using `pm4py`. Running token-based replay lets us measure empirical trace fitness and precision while mathematically detecting unauthorized resolution shortcuts and ping-pong reassignment loops."*
-
-- **On Queueing Theory Realism:**
-  > *"Traditional simulations assume static averages, which miss real-world queue collapses. We built non-homogeneous Poisson arrival models and applied Kingman's Heavy-Traffic Approximation ($\rho \to 1.0$), demonstrating how small reductions in arrival volume via AI auto-resolution prevent catastrophic exponential explosions in ticket wait times."*
+- **Distribution-Free Uncertainty Quantification:** Split Conformal Prediction eliminates arbitrary confidence heuristics, guaranteeing that the model's prediction sets contain the true resolution class with $\ge 95\%$ coverage ($\alpha=0.05$). Automated runbooks only execute when the prediction set is a singleton ($| \Gamma | = 1$), eliminating false-positive runs.
+- **Incident Storm Semantic Deduplication:** Sliding-window vector semantic caching clusters bursty near-duplicate tickets under a single Master Incident ID during outages, bypassing redundant LLM inferences and slashing operational token costs.
+- **Rigorous Mathematical Queueing Models:** Multi-server $M/M/c$ queueing and Kingman's Heavy-Traffic Approximation accurately capture exponential wait-time degradation as server utilization $\rho \to 1.0$, empirically demonstrating the threshold where AI triage prevents service-desk queue collapse.
+- **Auditable ITIL Lifecycle Conformance:** Standardized IEEE XES event logs coupled with Inductive Petri Net token replay provide objective measurements of process fitness and precision, mathematically exposing unauthorized shortcuts and departmental bounce loops.
 
 ---
 
 ## 📄 License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+

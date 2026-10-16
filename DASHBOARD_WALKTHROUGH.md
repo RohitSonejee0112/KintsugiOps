@@ -1,6 +1,6 @@
 # ✨ KintsugiOps: Enterprise ITSM Platform Walkthrough & Demonstration Guide
 
-This guide walks you through every section of **KintsugiOps** — an enterprise AI-assisted ITSM automation, conformance checking, and process mining portal. It explains **what actions to take**, **how the RBAC delegation & audit trail operates**, **what results you will observe**, and **unbeatable technical interview talking points**.
+This guide walks you through every section of **KintsugiOps** — an enterprise AI-assisted ITSM automation, conformance checking, and process mining portal. It explains **what actions to take**, **how the RBAC delegation & audit trail operates**, and **the operational deliverables you will observe**.
 
 ---
 
@@ -124,7 +124,7 @@ Uses **`pm4py`** and **IEEE XES** event logs to analyze process health: detectin
 ## 📋 View 4: SharePoint Governance & Proposals
 
 ### 1. Purpose & Concept
-Backs the resume bullet: **"proposing structural improvements and documenting the outcomes in SharePoint"**. Generates data-backed structural initiatives grounded in process mining, persisting to SharePoint Lists via Microsoft Graph API (with local offline JSON store).
+**Enterprise Governance Goal:** Generates data-backed structural initiatives grounded in process mining, persisting to SharePoint Lists via Microsoft Graph API (with local offline JSON store).
 
 ### 2. Actions to Take
 1. Click **"📋 SharePoint Governance & Proposals"**.
@@ -139,7 +139,7 @@ Backs the resume bullet: **"proposing structural improvements and documenting th
 ## 📊 View 5: Simulation & ROI Benchmark
 
 ### 1. Purpose & Concept
-Backs the resume bullet: **"drastically improving response times for service requests"**. Runs a dual-layer quantitative simulation:
+**Operational Performance Goal:** Runs a dual-layer quantitative simulation:
 1. **Discrete-Event Monte Carlo Simulation**: Compares **Manual Human Baseline** vs. **AI Treatment** across thousands of tickets.
 2. **Queueing Theory Realism ($M/M/c$ Queues & Kingman's Heavy-Traffic Formula)**: Explains the non-linear mathematical phenomenon of why shaving 38% of tier-1 tickets produces an exponential **90%+ reduction in queue backlog delay**.
 
@@ -147,7 +147,7 @@ Backs the resume bullet: **"drastically improving response times for service req
 1. Click **"📊 Simulation & ROI Benchmark"**.
 2. Adjust simulation sliders (Volume, Manual Triage Delay, Runbook Coverage).
 3. Click **"🚀 Run Monte Carlo Simulation"**.
-4. Review the **🏆 Resume Quantitative Numbers Summary**:
+4. Review the **🏆 Executive Operational ROI Summary**:
    - Numbers and units are uniformly formatted in bold orange (`3.5 hours`, `1.8 minutes`, `68.6% improvement`).
 5. Scroll down to **📈 Queueing Theory Realism: Kingman's Law & Peak Saturation Dynamics**:
    - Inspect the comparative analysis:
@@ -158,7 +158,7 @@ Backs the resume bullet: **"drastically improving response times for service req
 
 ---
 
-## 💡 Quick Interview Demonstration Script (2-Minute Demo)
+## 💡 Quick Platform Demonstration Script (2-Minute Walkthrough)
 
 1. **Start on Left Sidebar & Tab 1**:
    > *"This platform is built as an enterprise ITSM portal with role-based personas. As Sarah, our Dispatcher, I can review incoming tickets in the Live Triage Console. The platform redacts PII, applies Split Conformal Prediction to statistically bound false-positive risk under 5% before zero-touch execution, and clusters outage storms via Semantic Caching. I can delegate this ticket directly to Alice Cooper in Desktop Support, persisting the assignment to our SQLite audit log."*

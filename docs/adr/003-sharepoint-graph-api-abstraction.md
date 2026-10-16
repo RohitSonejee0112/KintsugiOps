@@ -4,7 +4,7 @@
 Accepted
 
 ## Context
-The resume bullet asserts: *"documenting the outcomes in SharePoint."* While enterprise deployments connect to Microsoft 365 SharePoint Online via the Microsoft Graph API and Azure AD App Registrations (MSAL), prospective employers and technical evaluators testing the repository offline or in sandbox environments will not have access to a corporate Microsoft 365 tenant.
+Enterprise service desks require documenting operational findings and governance proposals in enterprise knowledge repositories such as Microsoft SharePoint. While production deployments connect to Microsoft 365 SharePoint Online via the Microsoft Graph API and Azure AD App Registrations (MSAL), developers and engineers running the platform in local or sandbox environments may not always have active tenant administrative credentials.
 
 ## Decision
 We implemented a **Provider Pattern** with a `DocumentationProvider` abstract interface:

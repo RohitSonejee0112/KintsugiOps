@@ -4,7 +4,7 @@
 Accepted
 
 ## Context
-The resume bullet asserts: *"Engaged with AI-assisted automation tooling to identify operational process gaps, proposing structural improvements."* To ground this claim in empirical, industry-standard science rather than superficial text generation, we needed algorithmic process discovery on event logs.
+Enterprise service desks require automated tooling to systematically identify operational process bottlenecks, compliance deviations, and structural gaps. To ground this analysis in empirical, industry-standard science rather than superficial text heuristics, we needed algorithmic process discovery on event logs.
 
 ## Decision
 We implemented event-log extraction adhering to the IEEE XES standard and integrated **pm4py** and **pandas**:
@@ -15,4 +15,4 @@ We implemented event-log extraction adhering to the IEEE XES standard and integr
 
 ## Consequences
 - Requires Pandas and pm4py.
-- Produces rigorous, demonstrable audit reports that stand up to tough interviewer inspection.
+- Produces rigorous, mathematically demonstrable audit reports that adhere to strict ITIL compliance standards.

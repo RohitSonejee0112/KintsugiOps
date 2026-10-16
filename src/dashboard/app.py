@@ -849,7 +849,7 @@ elif active_tab == "📋 SharePoint Governance & Proposals":
 # ==============================================================================
 elif active_tab == "📊 Simulation & ROI Benchmark":
     st.header("📊 Discrete-Event Simulation & Empirical Benchmark")
-    st.markdown("Monte Carlo simulation backing the resume claim: comparing **Manual Baseline** against **AI Automated Treatment** across thousands of tickets.")
+    st.markdown("Monte Carlo simulation comparing **Manual Baseline** against **AI Automated Treatment** across thousands of enterprise tickets.")
 
     c_s1, c_s2, c_s3 = st.columns(3)
     with c_s1:
@@ -886,8 +886,8 @@ elif active_tab == "📊 Simulation & ROI Benchmark":
             })
             st.dataframe(comp_data, use_container_width=True)
 
-            # Uniform Bold Orange Resume Numbers Summary Card
-            st.markdown("### 🏆 Resume Quantitative Numbers Summary")
+            # Uniform Bold Orange Operational ROI Summary Card
+            st.markdown("### 🏆 Executive Operational ROI Summary")
             st.markdown(f"""
             <div class="resume-metric-container">
                 <div>• Reduced simulated Mean Time to Acknowledge (MTTA) from <span class="resume-stat-highlight">{kpis.mtta_baseline_hours:.1f} hours</span> to <span class="resume-stat-highlight">{kpis.mtta_treatment_hours * 60:.1f} minutes</span> (<span class="resume-stat-highlight">{kpis.mtta_reduction_pct}% reduction</span>).</div>
