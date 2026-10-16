@@ -59,6 +59,7 @@ class Ticket(Base):
     state = Column(String(50), default="new", index=True)
     assignment_group = Column(String(100), nullable=True, index=True)
     assigned_to = Column(String(100), nullable=True)
+    assigned_by = Column(String(100), nullable=True)
     caller_email = Column(String(255), nullable=False)
     created_at = Column(DateTime(timezone=True), default=utcnow, index=True)
     updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
