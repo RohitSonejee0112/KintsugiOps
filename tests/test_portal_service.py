@@ -184,3 +184,135 @@ def test_category_scoping_isolation():
     assert all(e["category"] == "Access / Identity" for e in iam_engineers)
     assert iam_engineers[iam_idx]["name"] == "Bob Martinez"
 
+
+def test_23_personas_and_cascading_departments_roster():
+    """Verify that exactly 23 personas exist across 5 departments with valid ITIL tags and attributes."""
+    from src.mock_itsm.portal_service import ALL_PERSONAS, DEPARTMENT_TEAMS, DEMO_PERSONAS, PERSONA_ALIAS_MAP
+
+    assert len(ALL_PERSONAS) == 23
+    assert len(DEPARTMENT_TEAMS) == 5
+
+    # Check 5 departments
+    dept_names = [d["name"] for d in DEPARTMENT_TEAMS]
+    assert "Admin & Operations Governance" in dept_names
+    assert "Enterprise ERP & SAP" in dept_names
+    assert "Hardware & Desktop Support" in dept_names
+    assert "Network Infrastructure" in dept_names
+    assert "Access & Identity / Security" in dept_names
+
+    # Check Admin & Operations Governance has Sarah, Elena, Allison
+    admin_dept = next(d for d in DEPARTMENT_TEAMS if d["name"] == "Admin & Operations Governance")
+    assert admin_dept["members"] == ["sarah_connor", "elena_vance", "allison_hill"]
+    assert ALL_PERSONAS["sarah_connor"]["itil_tag"] == "[DISPATCHER]"
+    assert ALL_PERSONAS["elena_vance"]["itil_tag"] == "[AUDITOR]"
+    assert ALL_PERSONAS["allison_hill"]["itil_tag"] == "[END-USER]"
+
+    # Check each technical team has exactly 5 members (1 Lead, 2 Seniors, 2 Juniors)
+    for dept in DEPARTMENT_TEAMS:
+        if dept["name"] == "Admin & Operations Governance":
+            continue
+        members = [ALL_PERSONAS[m_key] for m_key in dept["members"]]
+        assert len(members) == 5
+        leads = [m for m in members if m["seniority"] == "lead"]
+        seniors = [m for m in members if m["seniority"] == "senior"]
+        juniors = [m for m in members if m["seniority"] == "junior"]
+        assert len(leads) == 1 and leads[0]["itil_tag"] == "[LEAD]"
+        assert len(seniors) == 2 and all(s["itil_tag"] == "[SENIOR]" for s in seniors)
+        assert len(juniors) == 2 and all(j["itil_tag"] == "[JUNIOR]" for j in juniors)
+
+    # Verify all 23 members have mandatory fields
+    required_fields = {"name", "email", "role", "department", "seniority", "itil_tag", "avatar", "description"}
+    for key, p in ALL_PERSONAS.items():
+        assert required_fields.issubset(set(p.keys())), f"Persona {key} missing required attributes"
+
+    # Verify backwards compatibility in DEMO_PERSONAS and aliases
+    for legacy_key, canonical_key in PERSONA_ALIAS_MAP.items():
+        assert legacy_key in DEMO_PERSONAS
+        assert DEMO_PERSONAS[legacy_key]["email"] == ALL_PERSONAS[canonical_key]["email"]
+        resolved = PortalService.get_persona(legacy_key)
+        assert resolved["name"] == ALL_PERSONAS[canonical_key]["name"]
+
+
+def test_rbac_dynamic_visibility_all_tiers(db_session):
+    """
+    Test SAP-grade dynamic RBAC visibility across all 5 tiers:
+    1. End-User (Allison Hill): only caller tickets, hidden from P1 outages.
+    2. Junior Engineer: only P3 & P4 of own team.
+    3. Senior Engineer: all P1-P4 of own team, no other teams.
+    4. Team Lead: all tickets of own team PLUS company-wide P1 outages.
+    5. Dispatcher & Auditor: global visibility.
+    """
+    from src.mock_itsm.portal_service import ALL_PERSONAS
+
+    # Clear and seed test tickets across groups and priorities
+    db_session.query(Ticket).delete()
+    db_session.commit()
+
+    test_tickets = [
+        # ERP Team tickets
+        Ticket(id="T-ERP-P1", title="SAP Prod Outage", description="SAP production database unresponsive", category="ERP / SAP", priority=1, assignment_group="Enterprise-ERP-Support", caller_email="user1@corp.com", state="new"),
+        Ticket(id="T-ERP-P2", title="ABAP RFC Error", description="RFC connection timeout", category="ERP / SAP", priority=2, assignment_group="Enterprise-ERP-Support", caller_email="user2@corp.com", state="new"),
+        Ticket(id="T-ERP-P3", title="SAP GUI Lock", description="User session locked in GUI", category="ERP / SAP", priority=3, assignment_group="Enterprise-ERP-Support", caller_email="user3@corp.com", state="new"),
+        Ticket(id="T-ERP-P4", title="SAP Cost Center Query", description="Help with cost center assignment", category="ERP / SAP", priority=4, assignment_group="Enterprise-ERP-Support", caller_email="user4@corp.com", state="new"),
+
+        # Network Team tickets (including a P1 Major Outage)
+        Ticket(id="T-NET-P1", title="Core Switch Down", description="Core datacenter switch failure", category="Network", priority=1, assignment_group="Network-Infrastructure-Ops", caller_email="user5@corp.com", state="new"),
+        Ticket(id="T-NET-P2", title="VPN Gateway Latency", description="High packet drop on VPN gateway", category="Network", priority=2, assignment_group="Network-Infrastructure-Ops", caller_email="user6@corp.com", state="new"),
+        Ticket(id="T-NET-P3", title="Wi-Fi AP Offline", description="Floor 3 access point offline", category="Network", priority=3, assignment_group="Network-Infrastructure-Ops", caller_email="user7@corp.com", state="new"),
+
+        # End-User Allison Hill personal ticket
+        Ticket(id="T-USER-ALLISON", title="Password Reset Request", description="Allison locked out of account", category="Hardware", priority=3, assignment_group="Desktop-Support-L2", caller_email="allison.hill@corp.com", state="new"),
+    ]
+    for t in test_tickets:
+        db_session.merge(t)
+    db_session.commit()
+
+    # 1. End-User: Allison Hill
+    allison = ALL_PERSONAS["allison_hill"]
+    allison_tickets, allison_badge = PortalService.get_rbac_tickets(db_session, allison)
+    allison_ids = {t.id for t in allison_tickets}
+    assert allison_ids == {"T-USER-ALLISON"}, "End-user must only view self-submitted tickets"
+    assert "T-ERP-P1" not in allison_ids, "End-user must be hidden from enterprise P1 outages"
+    assert "T-NET-P1" not in allison_ids
+    assert "RBAC-TIER-0" in allison_badge["tier_code"]
+
+    # 2. Junior Engineer: Siddharth Rao (Enterprise-ERP-Support)
+    siddharth = ALL_PERSONAS["siddharth_rao"]
+    siddharth_tickets, siddharth_badge = PortalService.get_rbac_tickets(db_session, siddharth)
+    siddharth_ids = {t.id for t in siddharth_tickets}
+    assert siddharth_ids == {"T-ERP-P3", "T-ERP-P4"}, "Junior must strictly see P3 and P4 tickets of own team"
+    assert "T-ERP-P1" not in siddharth_ids, "Junior cannot see P1"
+    assert "T-ERP-P2" not in siddharth_ids, "Junior cannot see P2"
+    assert "T-NET-P1" not in siddharth_ids, "Junior cannot see other teams"
+    assert "RBAC-TIER-1" in siddharth_badge["tier_code"]
+
+    # 3. Senior Engineer: Kavita Patel (Enterprise-ERP-Support)
+    kavita = ALL_PERSONAS["kavita_patel"]
+    kavita_tickets, kavita_badge = PortalService.get_rbac_tickets(db_session, kavita)
+    kavita_ids = {t.id for t in kavita_tickets}
+    assert kavita_ids == {"T-ERP-P1", "T-ERP-P2", "T-ERP-P3", "T-ERP-P4"}, "Senior sees all P1-P4 of own team"
+    assert "T-NET-P1" not in kavita_ids, "Senior cannot see cross-domain P1 outages"
+    assert "T-NET-P2" not in kavita_ids
+    assert "RBAC-TIER-2" in kavita_badge["tier_code"]
+
+    # 4. Team Lead: David Miller (Enterprise-ERP-Support Lead)
+    david = ALL_PERSONAS["david_miller"]
+    david_tickets, david_badge = PortalService.get_rbac_tickets(db_session, david)
+    david_ids = {t.id for t in david_tickets}
+    assert david_ids == {"T-ERP-P1", "T-ERP-P2", "T-ERP-P3", "T-ERP-P4", "T-NET-P1"}, "Lead sees own team + all cross-domain P1 War Room outages"
+    assert "T-NET-P2" not in david_ids, "Lead cannot see non-P1 tickets of other teams"
+    assert "T-NET-P3" not in david_ids
+    assert "RBAC-TIER-3" in david_badge["tier_code"]
+
+    # 5. Dispatcher: Sarah Connor & Auditor: Elena Vance
+    sarah = ALL_PERSONAS["sarah_connor"]
+    sarah_tickets, sarah_badge = PortalService.get_rbac_tickets(db_session, sarah)
+    assert len(sarah_tickets) == len(test_tickets), "Dispatcher has global unrestricted visibility"
+    assert "RBAC-TIER-4" in sarah_badge["tier_code"]
+
+    elena = ALL_PERSONAS["elena_vance"]
+    elena_tickets, elena_badge = PortalService.get_rbac_tickets(db_session, elena)
+    assert len(elena_tickets) == len(test_tickets), "Auditor has global unrestricted visibility"
+    assert "RBAC-TIER-4" in elena_badge["tier_code"]
+
+

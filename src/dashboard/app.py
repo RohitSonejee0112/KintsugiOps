@@ -20,7 +20,14 @@ importlib.reload(src.mock_itsm.portal_service)
 from sqlalchemy import desc
 from src.mock_itsm.database import SessionLocal, init_db, reset_db
 from src.mock_itsm.models import Ticket, EventLog, utcnow
-from src.mock_itsm.portal_service import PortalService, DEMO_PERSONAS, SUPPORT_ENGINEERS
+from src.mock_itsm.portal_service import (
+    PortalService,
+    DEMO_PERSONAS,
+    SUPPORT_ENGINEERS,
+    ALL_PERSONAS,
+    DEPARTMENT_TEAMS,
+    PERSONA_ALIAS_MAP,
+)
 from src.integrations.mock_provider import MockITSMProvider
 from src.automation.engine import AutomationEngine
 from src.automation.rules_engine import RulesEngine
@@ -148,12 +155,17 @@ init_db()
 
 # Session State Initialization
 if "current_persona_key" not in st.session_state:
-    st.session_state["current_persona_key"] = "dispatcher"
+    st.session_state["current_persona_key"] = "sarah_connor"
+else:
+    # Ensure legacy alias keys resolve to canonical keys
+    st.session_state["current_persona_key"] = PERSONA_ALIAS_MAP.get(
+        st.session_state["current_persona_key"], st.session_state["current_persona_key"]
+    )
 
 if "active_nav" not in st.session_state:
     st.session_state["active_nav"] = "🎯 Live Triage Console"
 
-current_persona = DEMO_PERSONAS[st.session_state["current_persona_key"]]
+current_persona = PortalService.get_persona(st.session_state["current_persona_key"])
 
 # ==============================================================================
 # SIDEBAR: AUTHENTICATED PERSONA & PORTAL NAVIGATION
@@ -172,9 +184,12 @@ with st.sidebar:
                 <div style="font-size: 0.82rem; color: #9CA3AF;">{current_persona['email']}</div>
             </div>
         </div>
-        <div style="margin-top: 8px;">
+        <div style="margin-top: 8px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
             <span style="background-color: #2563EB; color: white; padding: 2px 7px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
                 {current_persona['role']}
+            </span>
+            <span style="background-color: #374151; color: #F3F4F6; padding: 2px 7px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; border: 1px solid #4B5563;">
+                {current_persona.get('itil_tag', '')}
             </span>
         </div>
         <div style="font-size: 0.78rem; color: #D1D5DB; margin-top: 6px;">
@@ -183,26 +198,50 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    # 1-Click Role / Persona Switcher
-    with st.expander("👤 Switch Authenticated Persona"):
-        persona_options = {
-            "dispatcher": "Sarah Connor (Dispatcher / Triage Lead)",
-            "engineer_erp": "David Miller (ERP Systems Lead)",
-            "engineer_l2": "Alice Cooper (Support Engineer L2)",
-            "engineer_iam": "Bob Martinez (IAM Specialist)",
-            "engineer_net": "Carol Danvers (Network Operations Lead)",
-            "end_user": "Allison Hill (End-User Employee)",
-            "executive_auditor": "Elena Vance (Service Delivery Lead)",
-        }
-        selected_key = st.selectbox(
-            "Select Persona",
-            options=list(persona_options.keys()),
-            format_func=lambda k: persona_options[k],
-            index=list(persona_options.keys()).index(st.session_state["current_persona_key"]),
-            key="persona_selector_widget"
+    # Cascading 2-Step Persona Switcher
+    with st.expander("👤 Switch Authenticated Persona", expanded=True):
+        dept_names = [d["name"] for d in DEPARTMENT_TEAMS]
+
+        # Determine current department from current_persona
+        current_dept_name = current_persona.get("department", dept_names[0])
+        if current_dept_name not in dept_names:
+            for d in DEPARTMENT_TEAMS:
+                if d["group"] == current_persona.get("group") or d["name"] in current_dept_name:
+                    current_dept_name = d["name"]
+                    break
+            else:
+                current_dept_name = dept_names[0]
+
+        dept_idx = dept_names.index(current_dept_name) if current_dept_name in dept_names else 0
+
+        selected_dept_name = st.selectbox(
+            "Select Team / Department",
+            options=dept_names,
+            index=dept_idx,
+            format_func=lambda name: next(d["display"] for d in DEPARTMENT_TEAMS if d["name"] == name),
+            key="dept_selector_widget"
         )
-        if selected_key != st.session_state["current_persona_key"]:
-            st.session_state["current_persona_key"] = selected_key
+
+        selected_dept_obj = next(d for d in DEPARTMENT_TEAMS if d["name"] == selected_dept_name)
+        dept_member_keys = selected_dept_obj["members"]
+
+        # If current persona belongs to this department, default to it; otherwise default to first member (e.g. Lead)
+        current_canonical_key = current_persona.get("key", "sarah_connor")
+        if current_canonical_key in dept_member_keys:
+            member_idx = dept_member_keys.index(current_canonical_key)
+        else:
+            member_idx = 0
+
+        selected_member_key = st.selectbox(
+            "Select Authenticated Member",
+            options=dept_member_keys,
+            index=member_idx,
+            format_func=lambda k: f"{ALL_PERSONAS[k]['name']} {ALL_PERSONAS[k]['itil_tag']}",
+            key="member_selector_widget"
+        )
+
+        if selected_member_key != st.session_state["current_persona_key"]:
+            st.session_state["current_persona_key"] = selected_member_key
             st.rerun()
 
     st.markdown("---")
@@ -594,21 +633,66 @@ elif active_tab == "📥 Operational Inbox & Delegation Tracker":
                     })
                 st.dataframe(pd.DataFrame(s_records), use_container_width=True)
 
-        # TAB D: ENTERPRISE TICKET REGISTER
+        # TAB D: ENTERPRISE TICKET REGISTER (SAP-GRADE DYNAMIC RBAC)
         with t_all:
-            st.subheader("All Enterprise Tickets (SQLite Database)")
-            all_tickets = db.query(Ticket).order_by(Ticket.created_at.desc()).limit(100).all()
-            if all_tickets:
-                reg_data = [{
-                    "ID": t.id,
-                    "Title": t.title[:45] + "...",
-                    "Category": t.category,
-                    "Priority": f"P{t.priority}",
-                    "State": t.state.upper(),
-                    "Assigned To": t.assigned_to or "Unassigned",
-                    "Delegated By": t.assigned_by or "-",
-                    "Caller": t.caller_email,
-                } for t in all_tickets]
+            st.subheader("🌐 Enterprise Ticket Register (SAP-Grade RBAC)")
+
+            # Dynamically fetch RBAC-filtered tickets and active tier metadata
+            filtered_tickets, rbac_badge = PortalService.get_rbac_tickets(db, current_persona)
+
+            # Informational Enterprise RBAC Authorization Badge
+            badge_html = f"""
+            <div style="background: linear-gradient(90deg, #131722 0%, #1a202c 100%); border-left: 4px solid {rbac_badge['badge_color']}; border-radius: 8px; padding: 14px 18px; margin-bottom: 16px; border: 1px solid #2d3748;">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 1.6rem;">{rbac_badge['icon']}</span>
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <strong style="color: #F8FAFC; font-size: 0.96rem;">{rbac_badge['tier_title']}</strong>
+                                <span style="background-color: {rbac_badge['badge_bg']}; color: {rbac_badge['badge_color']}; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 9999px; border: 1px solid {rbac_badge['badge_border']};">
+                                    {rbac_badge['tier_code']}
+                                </span>
+                            </div>
+                            <div style="color: #94A3B8; font-size: 0.82rem; margin-top: 3px;">{rbac_badge['description']}</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <span style="background-color: #1E293B; color: #CBD5E1; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 6px; border: 1px solid #334155;">
+                            Scope: <strong>{rbac_badge['scope_tag']}</strong>
+                        </span>
+                        <span style="background-color: #1E293B; color: {rbac_badge['badge_color']}; font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 6px; border: 1px solid #334155;">
+                            {len(filtered_tickets)} Tickets Authorized
+                        </span>
+                    </div>
+                </div>
+            </div>
+            """
+            st.markdown(badge_html, unsafe_allow_html=True)
+
+            if not filtered_tickets:
+                st.info(f"No tickets currently visible under the active RBAC authorization scope for {current_persona['name']}.")
+            else:
+                reg_data = []
+                for t in filtered_tickets:
+                    # Highlight cross-domain P1 War Room incidents for Team Leads
+                    is_cross_domain_p1 = (
+                        current_persona.get("seniority") == "lead"
+                        and t.priority == 1
+                        and t.assignment_group != current_persona.get("group")
+                    )
+                    group_disp = f"🚨 {t.assignment_group} [WAR ROOM]" if is_cross_domain_p1 else (t.assignment_group or "Unassigned")
+
+                    reg_data.append({
+                        "ID": t.id,
+                        "Title": t.title[:45] + "..." if len(t.title) > 45 else t.title,
+                        "Category": t.category,
+                        "Operational Group": group_disp,
+                        "Priority": f"P{t.priority}",
+                        "State": t.state.upper(),
+                        "Assigned To": t.assigned_to or "Unassigned",
+                        "Delegated By": t.assigned_by or "-",
+                        "Caller": t.caller_email,
+                    })
                 st.dataframe(pd.DataFrame(reg_data), use_container_width=True)
 
 
