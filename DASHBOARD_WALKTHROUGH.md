@@ -19,18 +19,34 @@ Open your browser to: **`http://localhost:8501`**
 ## 👤 Left Sidebar: RBAC Persona Switcher & Portal Navigation
 
 ### 1. Concept & Multi-Role Architecture
-Unlike a simple dashboard, this platform functions as a full-fledged **Enterprise ITSM Portal** featuring **Role-Based Access Control (RBAC)**:
-- **`Sarah Connor` (Dispatcher / Triage Lead)**: `dispatcher@corp.com` — Triages incoming incidents, reviews AI evidence, delegates tickets to engineers according to ITIL seniority rules, and tracks live status feeds.
-- **`David Miller` (ERP Systems Lead)**: `david.miller@corp.com` — Enterprise ERP & SAP Lead. Automatically pre-selected as the default assignee for all ERP/SAP tickets.
-- **`Alice Cooper` (Desktop Support Lead)**: `tech-alice@corp.com` — Hardware team lead. Automatically pre-selected as the default assignee for Hardware tickets.
-- **`Bob Martinez` (IAM Specialist / Lead)**: `tech-bob@corp.com` — Identity team lead. Automatically pre-selected as default assignee for Access/IAM tickets.
-- **`Carol Danvers` (Network Operations Lead)**: `specialist-carol@corp.com` — Network team lead. Automatically pre-selected as default assignee for Network tickets.
-- **`Allison Hill` (End-User Employee)**: `allison.hill@corp.com` — Submits service requests and tracks resolution progress.
-- **`Elena Vance` (Service Delivery Lead / Auditor)**: `elena.auditor@corp.com` — Audits ITIL conformance, process mining bottlenecks, and SharePoint structural proposals.
+Unlike a simple dashboard, this platform functions as a full-fledged **Enterprise ITSM Portal** featuring **Role-Based Access Control (RBAC)** across **23 authenticated personas** in 5 operational departments:
+- **`Admin & Operations Governance`**:
+  - `Sarah Connor` (`dispatcher@corp.com`) `[DISPATCHER]` — Global triage lead; delegates tickets across all enterprise domains.
+  - `Elena Vance` (`elena.auditor@corp.com`) `[AUDITOR]` — Service Delivery auditor; audits ITIL conformance, process mining, and SharePoint proposals.
+  - `Allison Hill` (`allison.hill@corp.com`) `[END-USER]` — End-user employee; submits service requests and tracks personal tickets.
+- **`Enterprise ERP & SAP` (`Enterprise-ERP-Support`)**:
+  - `David Miller` `[LEAD]` (ERP Systems Lead / Manager)
+  - `Kavita Patel` `[SENIOR]` & `Marcus Vance` `[SENIOR]` (Senior SAP/ABAP Specialists)
+  - `Siddharth Rao` `[JUNIOR]` & `Chloe Bennett` `[JUNIOR]` (Junior ERP Associates)
+- **`Hardware & Desktop Support` (`Desktop-Support-L2`)**:
+  - `Alice Cooper` `[LEAD]` (Desktop Support Operations Lead)
+  - `James Wilson` `[SENIOR]` & `Rachel Green` `[SENIOR]` (Senior Hardware Specialists)
+  - `Lucas Scott` `[JUNIOR]` & `Maya Lin` `[JUNIOR]` (Junior Hardware Technicians)
+- **`Network Infrastructure` (`Network-Infrastructure-Ops`)**:
+  - `Carol Danvers` `[LEAD]` (Network Operations Lead)
+  - `Vikram Malhotra` `[SENIOR]` & `Samantha Cole` `[SENIOR]` (Senior Routing & Security Engineers)
+  - `Ethan Hunt` `[JUNIOR]` & `Priya Sharma` `[JUNIOR]` (Junior Network NOC Technicians)
+- **`Access & Identity / Security` (`IAM-Identity-Operations`)**:
+  - `Bob Martinez` `[LEAD]` (Identity Governance & IAM Lead)
+  - `Fatima Zahra` `[SENIOR]` & `Liam O'Connor` `[SENIOR]` (Senior Directory & PAM Engineers)
+  - `Noah Clark` `[JUNIOR]` & `Zara Ahmed` `[JUNIOR]` (Junior Access Provisioning Associates)
 
 ### 2. Actions to Take
-1. Look at the **User Profile Card** at the top of the sidebar.
-2. Click **"👤 Switch Authenticated Persona"** to switch between **Dispatcher (Sarah Connor)**, **ERP Lead (David Miller)**, **Desktop Support (Alice Cooper)**, **IAM Lead (Bob Martinez)**, **Network Lead (Carol Danvers)**, **End-User (Allison Hill)**, or **Auditor (Elena Vance)** in 1 click.
+1. Look at the **User Profile Card** at the top of the sidebar showing the active user's avatar, name, email, operational role, and ITIL tag.
+2. In the **"👤 Switch Authenticated Persona"** card:
+   - **Step 1 ("Select Team / Department"):** Choose from the 5 departments (e.g. `Enterprise ERP & SAP`, `Network Infrastructure`).
+   - **Step 2 ("Select Authenticated Member"):** Dynamically filters and exposes all members of that team with their ITIL tags (e.g. `David Miller [LEAD]`, `Kavita Patel [SENIOR]`, `Siddharth Rao [JUNIOR]`).
+3. Select any member — the UI immediately refreshes state and updates RBAC data boundaries.
 3. Use the **Clickable Portal Navigation** buttons on the left to move between views:
    - `🎯 Live Triage Console`
    - `📥 Operational Inbox & Delegation Tracker`
@@ -100,7 +116,13 @@ Demonstrates real-world multi-user ticket lifecycle tracking. Whatever ticket yo
    - Review the **⚡ Live Delegation Activity Feed** showing real-time updates:
      `🕒 [2026-10-16 10:45] tech-alice@corp.com performed Resolved on Ticket INC...`
 6. Switch to **"👤 My Submitted Requests"** (when logged in as Allison Hill) to see end-user tracking.
-7. Switch to **"🌐 Enterprise Ticket Register"** for full SQLite database querying.
+7. Switch to **"🌐 Enterprise Ticket Register"** to observe **SAP-Grade Dynamic RBAC Visibility**:
+   - Inspect the **Informational Enterprise RBAC Authorization Badge** displaying the active security clearance tier, operational scope tag, and authorized record count.
+   - **Test End-User Clearance:** Switch persona to `Allison Hill [END-USER]` $\to$ only tickets submitted by Allison are visible; all company-wide P1 outages and team queues are hidden.
+   - **Test Junior Clearance:** Switch to `Siddharth Rao [JUNIOR]` $\to$ only P3 & P4 tickets of `Enterprise-ERP-Support` appear; P1/P2 tickets are masked.
+   - **Test Senior Clearance:** Switch to `Kavita Patel [SENIOR]` $\to$ full `Enterprise-ERP-Support` queue (P1–P4) is visible; other department queues remain restricted.
+   - **Test Team Lead / MIM War Room:** Switch to `David Miller [LEAD]` $\to$ views all `Enterprise-ERP-Support` tickets PLUS cross-domain P1 Critical Outages tagged with **`🚨 [WAR ROOM]`**.
+   - **Test Global Clearance:** Switch to `Sarah Connor [DISPATCHER]` or `Elena Vance [AUDITOR]` $\to$ unrestricted visibility across all operational groups and priority levels.
 
 ---
 

@@ -6,14 +6,14 @@
 [![Streamlit](https://img.shields.io/badge/Dashboard-Streamlit-FF4B4B?logo=streamlit&logoColor=white)](https://kintsugiops.streamlit.app)
 [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://kintsugiops.streamlit.app)
 [![Conformal Prediction](https://img.shields.io/badge/Calibration-Split_Conformal_(α=0.05)-10B981)](https://arxiv.org/abs/2107.07511)
-[![Tests Passing](https://img.shields.io/badge/Tests-48%20Passed-brightgreen)](https://pytest.org/)
+[![Tests Passing](https://img.shields.io/badge/Tests-50%20Passed-brightgreen)](https://pytest.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 > 🚀 **Live Interactive Demo:** Experience KintsugiOps directly in your browser with zero installation: **[https://kintsugiops.streamlit.app](https://kintsugiops.streamlit.app)**
 
 > *"**Kintsugi (金継ぎ)** is the Japanese art of repairing broken ceramics with gold lacquer — transforming fractures into points of resilient strength. In enterprise operations, outages and workflow bottlenecks are inevitable; **KintsugiOps** transforms incident chaos into self-healing, auditable, and mathematically guaranteed enterprise resilience."*
 
-**KintsugiOps** is an enterprise-grade, end-to-end IT Service Management (ITSM) automation and process intelligence platform. Engineered with production-level rigor, it integrates **Split Conformal Prediction**, **Sliding-Window Vector Semantic Caching**, **Inductive Petri Net Conformance Checking (`pm4py`)**, **$M/M/c$ Kingman Queueing Simulation**, and a **20-Engineer Tiered ITIL Delegation Engine** with multi-role RBAC persona switching.
+**KintsugiOps** is an enterprise-grade, end-to-end IT Service Management (ITSM) automation and process intelligence platform. Engineered with production-level rigor, it integrates **Split Conformal Prediction**, **Sliding-Window Vector Semantic Caching**, **Inductive Petri Net Conformance Checking (`pm4py`)**, **$M/M/c$ Kingman Queueing Simulation**, a **23-Member Cascading Persona Switcher**, and an **SAP-Grade Dynamic RBAC Visibility Engine (5 Security Clearance Tiers)** with ITIL seniority delegation.
 
 ---
 
@@ -68,9 +68,27 @@ flowchart TD
 - **Sliding-Window Vector Semantic Caching:** High-dimensional sentence embeddings (`all-MiniLM-L6-v2`) match incoming tickets against a short-term sliding window. During major outages (e.g., VPN gateway failure), near-duplicate incident spikes are immediately detected, clustered under a designated **Master Incident ID**, and resolved together without redundant LLM inferences.
 - **Enterprise Security Guardrails:** Regex and heuristic token sanitizers scrub corporate IP addresses, employee emails, domain usernames, and credential tokens before classification.
 
-### 2. 👥 Tiered ITIL Seniority Delegation Engine (20 Engineers Across 4 Domains)
-A complete support organization of **20 engineers** is structured across 4 domains (5 members per domain: 1 Lead, 2 Seniors, 2 Juniors):
+### 2. 👥 Cascading Persona Switcher & SAP-Grade Dynamic RBAC Visibility
 
+KintsugiOps implements an enterprise-grade **23-Member Role-Based Access Control (RBAC)** architecture across 5 operational departments, coupled with dynamic data-level visibility filtering in the **Enterprise Ticket Register**.
+
+#### A. Cascading 2-Step Persona Switcher (Sidebar)
+Replaces flat role switching with a two-tier dependent selector:
+1. **Dropdown 1: "Select Team / Department"**:
+   - `Admin & Operations Governance`
+   - `Enterprise ERP & SAP (Enterprise-ERP-Support)`
+   - `Hardware & Desktop Support (Desktop-Support-L2)`
+   - `Network Infrastructure (Network-Infrastructure-Ops)`
+   - `Access & Identity / Security (IAM-Identity-Operations)`
+2. **Dropdown 2: "Select Authenticated Member"**:
+   - Dynamically filters based on the selected department, exposing all **23 members** with their official ITIL designation tags:
+     - **Admin & Governance:** `Sarah Connor [DISPATCHER]`, `Elena Vance [AUDITOR]`, `Allison Hill [END-USER]`
+     - **Enterprise ERP & SAP:** `David Miller [LEAD]`, `Kavita Patel [SENIOR]`, `Marcus Vance [SENIOR]`, `Siddharth Rao [JUNIOR]`, `Chloe Bennett [JUNIOR]`
+     - **Hardware & Desktop:** `Alice Cooper [LEAD]`, `James Wilson [SENIOR]`, `Rachel Green [SENIOR]`, `Lucas Scott [JUNIOR]`, `Maya Lin [JUNIOR]`
+     - **Network Infrastructure:** `Carol Danvers [LEAD]`, `Vikram Malhotra [SENIOR]`, `Samantha Cole [SENIOR]`, `Ethan Hunt [JUNIOR]`, `Priya Sharma [JUNIOR]`
+     - **Access & Identity:** `Bob Martinez [LEAD]`, `Fatima Zahra [SENIOR]`, `Liam O'Connor [SENIOR]`, `Noah Clark [JUNIOR]`, `Zara Ahmed [JUNIOR]`
+
+#### B. Tiered ITIL Seniority Delegation Matrix (20 Technical Engineers)
 | Operational Domain | Team / Assignment Group | Team Lead (P1, P2, P3, P4)<br>⭐ **Preferred Default** | Senior Engineers (P2, P3, P4) | Junior Engineers (P3, P4 only) |
 |---|---|---|---|---|
 | **ERP / SAP** | `Enterprise-ERP-Support` | **David Miller** (`david.miller@corp.com`) | Kavita Patel, Marcus Vance | Siddharth Rao, Chloe Bennett |
@@ -78,14 +96,23 @@ A complete support organization of **20 engineers** is structured across 4 domai
 | **Network** | `Network-Infrastructure-Ops` | **Carol Danvers** (`specialist-carol@corp.com`) | Vikram Malhotra, Samantha Cole | Ethan Hunt, Priya Sharma |
 | **Access / Identity** | `IAM-Identity-Operations` | **Bob Martinez** (`tech-bob@corp.com`) | Fatima Zahra, Liam O'Connor | Noah Clark, Zara Ahmed |
 
-- **Strict Category Scoping:** Dropdowns strictly display engineers belonging to the triaged ticket category.
-- **Priority-Based Seniority Filtering:**
-  - **P1 (Critical Outage):** Exactly 1 member shown (**Team Lead**).
-  - **P2 (High Priority):** Exactly 3 members shown (**Team Lead + 2 Seniors**; Juniors excluded).
-  - **P3 / P4 (Standard / Low):** All 5 members shown (**Team Lead + 2 Seniors + 2 Juniors**).
-- **Auto-Filled Preferred Assignee with Dispatcher Override:** For example, an ERP ticket automatically pre-fills **David Miller**, while dispatcher **Sarah Connor** retains 1-click override capability before dispatching.
-- **Multi-Role RBAC Switching:** 1-click persona switching (Dispatcher, ERP Lead, Desktop Support, IAM Specialist, Network Lead, End-User, Auditor).
-- **Audit Dossier Exporting:** Export comprehensive JSON and Markdown audit dossiers capturing ticket metadata, conformal set evidence, and governance history.
+- **Strict Category Isolation:** Live intake delegation dropdowns strictly display engineers belonging to the triaged ticket category.
+- **Priority Seniority Filtering:** P1 Critical is restricted exclusively to **Team Leads**; P2 High to **Leads + Seniors**; P3/P4 Standard open to **all 5 team members**.
+- **Preferred Lead Pre-Fill:** ERP tickets pre-fill **David Miller**, while Dispatcher **Sarah Connor** retains full override authority.
+
+#### C. SAP-Grade Dynamic RBAC Visibility Tiers (Tab 2: Enterprise Ticket Register)
+Tickets in the enterprise register table are filtered at the database level according to strict SAP-grade clearance rules:
+
+| RBAC Authorization Tier | Authenticated Role / Persona | Operational Scope & Clearance Rule |
+| :--- | :--- | :--- |
+| **Tier 0: Self-Service Scope** | End-User (`Allison Hill`) | **Caller Tickets Only:** Strictly limited to tickets submitted by her (`caller_email == persona['email']`). Cross-domain queues and P1 outages are restricted. |
+| **Tier 1: L2 Primary Support** | Junior Engineers (`[JUNIOR]`) | **Operational Queue (P3/P4):** Strictly limited to Medium & Low priority tickets assigned to their group (`assignment_group == persona['group']`). P1/P2 major incidents masked. |
+| **Tier 2: L3 Development / RCA** | Senior Engineers (`[SENIOR]`) | **Full Team Queue (P1–P4):** Authorized for all priority levels within their operational group. Cross-domain queues restricted. |
+| **Tier 3: Major Incident Manager** | Team Leads (`[LEAD]`) | **Dual Scope (Own Team + Global P1):** Full team queue (P1–P4) PLUS all enterprise-wide P1 Critical Outages (`🚨 [WAR ROOM]` cross-domain visibility). |
+| **Tier 4: Global Governance** | Dispatcher & Auditor (`Sarah Connor`, `Elena Vance`) | **Global Enterprise Clearance:** Unrestricted visibility across all operational groups, departments, and priority levels. |
+
+- **Dynamic Authorization Badge:** Displays a styled glassmorphic banner above the register table stating the active tier code, operational scope, security boundary explanation, and count of authorized records.
+- **Audit Dossier Exporting:** Export comprehensive JSON and Markdown dossiers capturing ticket lifecycle metadata, conformal set evidence, and governance history.
 
 ### 3. 🔍 Process Mining & Petri Net Conformance Checking (`pm4py`)
 - Standardizes event transitions into **IEEE XES** event logs.
@@ -160,9 +187,9 @@ pip install -e ".[dev]"
 ```powershell
 pytest -v
 ```
-*All 48 unit and integration tests will execute and pass:*
+*All 50 unit and integration tests will execute and pass:*
 ```text
-======================= 48 passed, 1 warning in 37.51s ========================
+======================= 50 passed, 1 warning in 28.58s ========================
 ```
 
 ### 4. Launch the Interactive KintsugiOps Portal
@@ -178,7 +205,7 @@ Open your browser to: **`http://localhost:8501`**
 | Tab / View | Capabilities & Actions |
 |---|---|
 | **🎯 1. Live Triage Console** | Generate realistic support tickets, review calibrated confidence scores, inspect conformal prediction sets $\Gamma^{0.05}$, trigger self-service runbooks, delegate with strict domain/seniority scoping, and export audit dossiers. |
-| **📥 2. Operational Inbox & Delegation** | Multi-role workspace for Sarah Connor, David Miller, Alice Cooper, Bob Martinez, etc. Work on assigned cases, transition states (`Assigned` $\to$ `In Progress` $\to$ `Resolved`), and monitor live SQLite audit event feeds. |
+| **📥 2. Operational Inbox & Delegation** | Multi-role workspace for Sarah Connor, David Miller, Alice Cooper, Bob Martinez, etc. Work on assigned cases, transition states (`Assigned` $\to$ `In Progress` $\to$ `Resolved`), monitor live SQLite audit feeds, and inspect the **Enterprise Ticket Register** under dynamic SAP-grade RBAC authorization tiers. |
 | **🔍 3. Process Mining & ITIL Audit** | Empirical `pm4py` process mining with stage dwell times, ping-pong loops, Petri net token replay fitness, deviation alerts, and handover-of-work graphs. |
 | **📋 4. SharePoint Governance** | Review formal structural remediation proposals generated from detected bottlenecks, synchronized via Microsoft Graph API. |
 | **📊 5. Simulation & ROI Benchmark** | Interactive $M/M/c$ queueing and Kingman saturation simulations calculating empirical MTTA/MTTR reductions and cost savings. |
