@@ -56,3 +56,8 @@ htmlcov/
 
 # Streamlit secrets (keep config.toml)
 .streamlit/secrets.toml
+
+# Raw captures and temporary exports
+images/* *
+images/*.csv
+

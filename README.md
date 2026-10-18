@@ -6,10 +6,15 @@
 [![Streamlit](https://img.shields.io/badge/Dashboard-Streamlit-FF4B4B?logo=streamlit&logoColor=white)](https://kintsugiops.streamlit.app)
 [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://kintsugiops.streamlit.app)
 [![Conformal Prediction](https://img.shields.io/badge/Calibration-Split_Conformal_(α=0.05)-10B981)](https://arxiv.org/abs/2107.07511)
-[![Tests Passing](https://img.shields.io/badge/Tests-50%20Passed-brightgreen)](https://pytest.org/)
+[![Tests Passing](https://img.shields.io/badge/Tests-51%20Passed-brightgreen)](https://pytest.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-> 🚀 **Live Interactive Demo:** Experience KintsugiOps directly in your browser with zero installation: **[https://kintsugiops.streamlit.app](https://kintsugiops.streamlit.app)**
+> 🚀 **Live Interactive Demo:** **[https://kintsugiops.streamlit.app](https://kintsugiops.streamlit.app)**  
+> 🎬 **End-to-End Walkthrough:** **[Watch Full 3.5-Min Video Demo (MP4)](images/kintsugiops_demo_walkthrough.mp4)**
+
+<div align="center">
+  <img src="images/hero_live_triage.gif" alt="KintsugiOps Live Triage & Delegation Hero Demo" width="100%" style="border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);" />
+</div>
 
 > *"**Kintsugi (金継ぎ)** is the Japanese art of repairing broken ceramics with gold lacquer — transforming fractures into points of resilient strength. In enterprise operations, outages and workflow bottlenecks are inevitable; **KintsugiOps** transforms incident chaos into self-healing, auditable, and mathematically guaranteed enterprise resilience."*
 
@@ -64,6 +69,9 @@ flowchart TD
 ## 🌟 Core Architectural Pillars
 
 ### 1. 🛡️ Calibrated AI Triage & Defensive Guardrails
+
+![Live Ticket Intake & Conformal Calibration](images/live_triage_intake.png)
+
 - **Split Conformal Prediction ($\alpha = 0.05$):** Uncalibrated LLM confidence scores frequently cause catastrophic false-positive automations. KintsugiOps implements distribution-free conformal calibration ($\mathbb{P}(Y \in \Gamma^\alpha) \ge 95\%$). Automated zero-touch runbooks only execute when the prediction set collapses to a single candidate ($|\Gamma|=1$).
 - **Sliding-Window Vector Semantic Caching:** High-dimensional sentence embeddings (`all-MiniLM-L6-v2`) match incoming tickets against a short-term sliding window. During major outages (e.g., VPN gateway failure), near-duplicate incident spikes are immediately detected, clustered under a designated **Master Incident ID**, and resolved together without redundant LLM inferences.
 - **Enterprise Security Guardrails:** Regex and heuristic token sanitizers scrub corporate IP addresses, employee emails, domain usernames, and credential tokens before classification.
@@ -89,6 +97,9 @@ Replaces flat role switching with a two-tier dependent selector:
      - **Access & Identity:** `Bob Martinez [LEAD]`, `Fatima Zahra [SENIOR]`, `Liam O'Connor [SENIOR]`, `Noah Clark [JUNIOR]`, `Zara Ahmed [JUNIOR]`
 
 #### B. Tiered ITIL Seniority Delegation Matrix (20 Technical Engineers)
+
+![Tiered Seniority Delegation & Assignee Selection](images/live_triage_delegation.png)
+
 | Operational Domain | Team / Assignment Group | Team Lead (P1, P2, P3, P4)<br>⭐ **Preferred Default** | Senior Engineers (P2, P3, P4) | Junior Engineers (P3, P4 only) |
 |---|---|---|---|---|
 | **ERP / SAP** | `Enterprise-ERP-Support` | **David Miller** (`david.miller@corp.com`) | Kavita Patel, Marcus Vance | Siddharth Rao, Chloe Bennett |
@@ -100,7 +111,20 @@ Replaces flat role switching with a two-tier dependent selector:
 - **Priority Seniority Filtering:** P1 Critical is restricted exclusively to **Team Leads**; P2 High to **Leads + Seniors**; P3/P4 Standard open to **all 5 team members**.
 - **Preferred Lead Pre-Fill:** ERP tickets pre-fill **David Miller**, while Dispatcher **Sarah Connor** retains full override authority.
 
+<div align="center">
+  <img src="images/rbac_dispatch_lock.gif" alt="ITIL Dispatch RBAC Security Restriction" width="95%" style="border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);" />
+  <p><em>🔒 <strong>Live ITIL Dispatch Permission Gate:</strong> When authenticated as an operational engineer (e.g. <code>Ethan Hunt [JUNIOR]</code> or <code>Kavita Patel [SENIOR]</code>), the intake dispatch button is dynamically locked with an ITIL restriction warning. Intake routing is strictly reserved for Dispatchers and Team Leads.</em></p>
+</div>
+
 #### C. SAP-Grade Dynamic RBAC Visibility Tiers (Tab 2: Enterprise Ticket Register)
+
+![Operational Inbox & Ticket State Remediation](images/operational_inbox.png)
+
+<div align="center">
+  <img src="images/ticket_lifecycle_resolution.gif" alt="Operational Ticket Remediation Lifecycle" width="95%" style="border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);" />
+  <p><em>📥 <strong>Operational Workstation in Action:</strong> <code>Samantha Cole [SENIOR]</code> inspects assigned incident <code>INC411377</code>, advances its state from <code>Assigned</code> to <code>In Progress</code>, and writes resolution notes to mark it <code>Resolved</code> with real-time audit logging.</em></p>
+</div>
+
 Tickets in the enterprise register table are filtered at the database level according to strict SAP-grade clearance rules:
 
 | RBAC Authorization Tier | Authenticated Role / Persona | Operational Scope & Clearance Rule |
@@ -131,6 +155,9 @@ Tickets in the enterprise register table are filtered at the database level acco
   demonstrating how system wait times explode exponentially as server utilization $\rho \to 1.0$, and quantifying how AI auto-resolution prevents queue collapse.
 
 ### 5. 📋 Automated SharePoint Governance
+
+![SharePoint Operational Improvement Tracker](images/sharepoint_governance.png)
+
 - Generates formal, publication-ready structural improvement proposals from discovered bottlenecks.
 - Interfaces via **Microsoft Graph API (OAuth2 MSAL)** with an automatic fallback to an offline local document library mirror.
 
@@ -187,9 +214,9 @@ pip install -e ".[dev]"
 ```powershell
 pytest -v
 ```
-*All 50 unit and integration tests will execute and pass:*
+*All 51 unit and integration tests will execute and pass:*
 ```text
-======================= 50 passed, 1 warning in 28.58s ========================
+======================= 51 passed, 1 warning in 45.46s ========================
 ```
 
 ### 4. Launch the Interactive KintsugiOps Portal
@@ -248,7 +275,7 @@ KintsugiOps/
 │       ├── graph_client.py          # MSAL OAuth2 Microsoft Graph client
 │       ├── local_provider.py        # Resilient offline document store mirror
 │       └── report_builder.py        # Executive Markdown audit report generator
-├── tests/                           # Comprehensive Pytest Suite (48 tests)
+├── tests/                           # Comprehensive Pytest Suite (51 tests)
 │   ├── test_ai_layer.py
 │   ├── test_conformal.py
 │   ├── test_semantic_cache.py
