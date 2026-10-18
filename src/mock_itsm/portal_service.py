@@ -846,6 +846,19 @@ class PortalService:
         return None
 
     @staticmethod
+    def can_dispatch_tickets(persona: Dict[str, Any]) -> bool:
+        """
+        Check if a persona has authority to dispatch incoming tickets.
+        Only Service Desk Dispatchers ('dispatcher') and Team Leads ('lead')
+        possess dispatch and routing authority in ITIL Service Desk operations.
+        Operational engineers (Senior/Junior), Auditors, and End-Users are restricted.
+        """
+        if not persona:
+            return False
+        seniority = str(persona.get("seniority", "")).lower()
+        return seniority in ["dispatcher", "lead"]
+
+    @staticmethod
     def get_rbac_tickets(
         db: Session,
         persona: Dict[str, Any],

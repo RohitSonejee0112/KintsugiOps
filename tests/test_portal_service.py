@@ -316,3 +316,29 @@ def test_rbac_dynamic_visibility_all_tiers(db_session):
     assert "RBAC-TIER-4" in elena_badge["tier_code"]
 
 
+def test_portal_can_dispatch_tickets():
+    """Verify that intake ticket dispatch is strictly limited to Dispatchers and Leads."""
+    from src.mock_itsm.portal_service import ALL_PERSONAS
+
+    # Dispatcher and Team Leads HAVE dispatch authority
+    assert PortalService.can_dispatch_tickets(ALL_PERSONAS["sarah_connor"]) is True
+    assert PortalService.can_dispatch_tickets(ALL_PERSONAS["david_miller"]) is True
+    assert PortalService.can_dispatch_tickets(ALL_PERSONAS["alice_cooper"]) is True
+    assert PortalService.can_dispatch_tickets(ALL_PERSONAS["carol_danvers"]) is True
+    assert PortalService.can_dispatch_tickets(ALL_PERSONAS["bob_martinez"]) is True
+
+    # Senior Engineers CANNOT dispatch (operational resolvers)
+    assert PortalService.can_dispatch_tickets(ALL_PERSONAS["kavita_patel"]) is False
+    assert PortalService.can_dispatch_tickets(ALL_PERSONAS["marcus_vance"]) is False
+    assert PortalService.can_dispatch_tickets(ALL_PERSONAS["fatima_zahra"]) is False
+
+    # Junior Engineers CANNOT dispatch
+    assert PortalService.can_dispatch_tickets(ALL_PERSONAS["siddharth_rao"]) is False
+    assert PortalService.can_dispatch_tickets(ALL_PERSONAS["chloe_bennett"]) is False
+
+    # Auditor & End-User CANNOT dispatch
+    assert PortalService.can_dispatch_tickets(ALL_PERSONAS["elena_vance"]) is False
+    assert PortalService.can_dispatch_tickets(ALL_PERSONAS["allison_hill"]) is False
+
+
+

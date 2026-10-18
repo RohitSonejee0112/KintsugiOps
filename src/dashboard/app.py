@@ -434,27 +434,50 @@ if active_tab == "🎯 Live Triage Console":
             st.text_input("Assigned Team / Group", value=selected_eng_obj["group"], disabled=True)
             st.caption(f"Role: **{selected_eng_obj.get('title', selected_eng_obj['name'])}**")
 
-        if st.button("📤 Assign & Dispatch Ticket to Engineer", type="secondary", use_container_width=True):
-            with SessionLocal() as db:
-                provider = MockITSMProvider()
-                created = provider.create_ticket({
-                    "title": title,
-                    "description": desc,
-                    "caller_email": caller,
-                    "category": triage_res.category,
-                    "impact": triage_res.impact,
-                    "urgency": triage_res.urgency,
-                })
-                delegated = PortalService.delegate_ticket(
-                    db=db,
-                    ticket_id=created.id,
-                    assigned_to=selected_engineer,
-                    assigned_by=current_persona["email"],
-                    target_group=selected_eng_obj["group"],
-                    notes=f"Dispatched via Live Console by {current_persona['name']}"
-                )
-            st.success(f"✅ Ticket `{created.id}` successfully delegated to `{selected_engineer}` by `{current_persona['email']}`!")
-            st.toast(f"Delegated {created.id} to {selected_engineer}")
+        can_dispatch = (
+            PortalService.can_dispatch_tickets(current_persona)
+            if hasattr(PortalService, "can_dispatch_tickets")
+            else (current_persona.get("seniority") in ["dispatcher", "lead"])
+        )
+
+        if not can_dispatch:
+            st.warning(
+                f"🔒 **Dispatch Action Restricted (ITIL RBAC):** Inbound incident assignment and engineer delegation "
+                f"is strictly restricted to **Service Desk Dispatchers** (`Sarah Connor [DISPATCHER]`) and **Domain Team Leads** (`[LEAD]`).\n\n"
+                f"Currently authenticated as **{current_persona['name']} [{current_persona.get('itil_tag', '')}]** ({current_persona.get('role', '')}). "
+                f"Your authorized role is incident fulfillment and remediation in **Tab 2 (📥 Operational Inbox)**."
+            )
+
+        if st.button(
+            "📤 Assign & Dispatch Ticket to Engineer",
+            type="secondary",
+            use_container_width=True,
+            disabled=not can_dispatch,
+            help="Dispatch authority is restricted to Dispatcher and Team Lead personas." if not can_dispatch else "Dispatch ticket to selected engineer"
+        ):
+            if not can_dispatch:
+                st.error("⛔ Unauthorized: Your current persona does not have permission to dispatch tickets.")
+            else:
+                with SessionLocal() as db:
+                    provider = MockITSMProvider()
+                    created = provider.create_ticket({
+                        "title": title,
+                        "description": desc,
+                        "caller_email": caller,
+                        "category": triage_res.category,
+                        "impact": triage_res.impact,
+                        "urgency": triage_res.urgency,
+                    })
+                    delegated = PortalService.delegate_ticket(
+                        db=db,
+                        ticket_id=created.id,
+                        assigned_to=selected_engineer,
+                        assigned_by=current_persona["email"],
+                        target_group=selected_eng_obj["group"],
+                        notes=f"Dispatched via Live Console by {current_persona['name']}"
+                    )
+                st.success(f"✅ Ticket `{created.id}` successfully delegated to `{selected_engineer}` by `{current_persona['email']}`!")
+                st.toast(f"Delegated {created.id} to {selected_engineer}")
 
         # Download Audit Dossier
         st.markdown("---")
